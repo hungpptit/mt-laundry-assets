@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Mask Detection ESP32-CAM</title>
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@teachablemachine/image"></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      text-align: center;
+      background: #f5f5f5;
+    }
+    #esp32-stream {
+      width: 320px;
+      border: 2px solid #333;
+      margin-top: 20px;
+    }
+    #label-container {
+      margin-top: 20px;
+      font-size: 20px;
+      font-weight: bold;
+      color: #222;
+    }
+    .mask { color: green; }
+    .nomask { color: red; }
+  </style>
+</head>
+<body>
+  <h2>ESP32-CAM Mask Detection</h2>
+  
+  <!-- Thay IP ESP32-CAM của bạn vào đây -->
+  <img id="esp32-stream" src="http://192.168.1.50:81/stream" crossorigin="anonymous">
+
+  <div id="label-container">Loading model...</div>
+
+  <script>
+    const MODEL_URL = "https://yourname.github.io/mask-model/"; 
+    // ↑ Thay bằng link GitHub Pages chứa model.json, metadata.json, weights.bin
+    const ESP32_IP = "192.168.1.50"; 
+    // ↑ Thay bằng IP ESP32-CAM của bạn
+
+    let model, maxPredictions;
+
+    async function init() {
+      const modelURL = MODEL_URL + "model.json";
+      const metadataURL = MODEL_URL + "metadata.json";
+
+      model = await tmImage.load(modelURL, metadataURL);
+      maxPredictions = model.getTotalClasses();
+
+      document.getElementById("label-container").innerText = "Model loaded, starting detection...";
+
+      // Predict mỗi 500ms
+      setInterval(predict, 500);
+    }
+
+    async function predict() {
+      const img = document.getElementById("esp32-stream");
+      if (!model) return;
+
+      const prediction = await model.predict(img);
+      let result = "";
+      let labelDiv = document.getElementById("label-container");
+
+      prediction.sort((a, b) => b.probability - a.probability);
+      const top = prediction[0];
+
+      if (top.className === "Mask" && top.probability > 0.8) {
+        result = `<span class="mask">✅ Đang đeo khẩu trang (${(top.probability*100).toFixed(1)}%)</span>`;
+        // Ví dụ: gửi lệnh về ESP32 bật LED
+        // fetch(`http://${ESP32_IP}/control?cmd=led&state=off`);
+      } else if (top.className === "NoMask" && top.probability > 0.8) {
+        result = `<span class="nomask">❌ Không đeo khẩu trang (${(top.probability*100).toFixed(1)}%)</span>`;
+        // Ví dụ: gửi lệnh về ESP32 bật cảnh báo
+        // fetch(`http://${ESP32_IP}/control?cmd=led&state=on`);
+      } else {
+        result = `Đang xử lý...`;
+      }
+
+      labelDiv.innerHTML = result;
+    }
+
+    init();
+  </script>
+</body>
+</html>
