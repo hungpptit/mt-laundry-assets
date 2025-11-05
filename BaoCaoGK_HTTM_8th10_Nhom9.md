@@ -1,3 +1,14 @@
+
+### 📊 Bảng Phân Công Công Việc
+
+| Thành viên | Công việc đã thực hiện | Số lượng |
+|------------|------------------------|----------|
+| **Phạm Tuấn Hưng** | - Thiết kế Database Schema (SQL Server + Sequelize)<br>- Setup Backend Structure (Express, folder structure)<br>- Authentication API (Register, Login, JWT, Refresh token)<br>- Authorization Middleware (Phân quyền Admin/User)<br>- AI Chatbot API (Tích hợp Google Gemini)<br>- ML Model Training (Python, scikit-learn)<br>- ML Prediction API (ONNX Runtime)<br>- Cloudinary Integration (Upload media)<br>- Deployment & DevOps (Server, domain config) | **11 tasks** |
+| **Hồ Thuận Kiều** | - Setup Frontend Structure (React + TypeScript + Vite)<br>- Login/Register UI (Form validation)<br>- Profile Page UI (Chỉnh sửa thông tin user)<br>- Admin Test Management UI (CRUD tests)<br>- Test List Page (Danh sách bài test)<br>- Test Taking UI (Làm bài, timer, audio player)<br>- Result Display UI (Kết quả chi tiết)<br>- Chatbot UI (Giao diện chat)<br>- ML Result UI (Hiển thị dự đoán điểm)<br>- Upload UI Component (Upload file, preview)<br>- Dashboard UI (Chart.js, thống kê)<br>- Admin Dashboard (Thống kê hệ thống)<br>- Responsive Design (Mobile-friendly) | **11 tasks** |
+| **Nguyễn Tấn Quý** | - User Management API (Profile, Update, Change password)<br>- Test CRUD API (Create, Read, Update, Delete)<br>- Questions API (Lấy câu hỏi theo test và part)<br>- Submit Answer API (Chấm điểm, lưu kết quả)<br>- History API (Lịch sử làm bài)<br>- Chat History API (Lưu và lấy lịch sử chat)<br>- Media Upload API (Upload audio/image)<br>- Statistics API (Điểm TB, số bài làm, xu hướng)<br>- Error Handling (Global error handler)<br>- API Documentation (Viết docs endpoints)<br>- API Testing (Test với Postman) | **11 tasks** |
+
+
+
 **BỘ THÔNG TIN VÀ TRUYỀN THÔNG**
 
 **HỌC VIỆN CÔNG NGHỆ BƯU CHÍNH VIỄN THÔNG CƠ SỞ TẠI THÀNH PHỐ HỒ CHÍ MINH**
