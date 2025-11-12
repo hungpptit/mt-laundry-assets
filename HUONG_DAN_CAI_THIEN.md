@@ -170,15 +170,26 @@ hybrid_scores = (0.7 * semantic_scores) + (0.3 * tfidf_scores)
 → Captures both semantic understanding & exact keywords
 ```
 
-**5. Dynamic Category Bonus** 🎯
+**5. ESCO-based Dynamic Category Bonus** 🎯🌐
 ```python
-# Smart bonus based on keyword frequency
-if keyword_count >= 2: bonus = 0.08  # Strong match
-elif keyword_count == 1: bonus = 0.05  # Medium match
-else: bonus = 0.00
+# NEW: Use 3,039 ESCO occupations for semantic matching
+# Load ESCO dataset
+esco_df = pd.read_csv('D:/HanDao/occupations_en.csv')  # 3,039 occupations
+esco_embeddings = model.encode(esco_df['preferredLabel'])
 
-→ "sales" xuất hiện 3 lần → +0.08 bonus
-→ Better than static +0.05
+# Smart bonus based on ESCO similarity
+def get_esco_category_bonus_fast(jd_embedding_idx, cv_category):
+    # Match JD → ESCO occupation
+    # Match CV category → ESCO occupation
+    # Calculate similarity between them
+    if similarity > 0.7: return 0.08  # High match
+    elif similarity > 0.5: return 0.05  # Medium match
+    else: return 0.00
+
+→ Replaces hard-coded CATEGORY_MAP (18 keywords)
+→ Scalable to 3,039+ occupations automatically
+→ Semantic matching: "Sales Specialist" → "sales engineer" (0.588)
+→ Better than keyword counting
 ```
 
 **6. Noise Penalty System** 🚫
@@ -212,7 +223,9 @@ JD #01 - Sales Specialist @ Google
 | **Extraction** | 2 fields (Skills, Education) | 6 fields (Job_Title, Experience, Projects, Skills, Education, Certifications) |
 | **Text Length** | ~100 words | ~300 words |
 | **Scoring Method** | Semantic only | Hybrid (70% semantic + 30% lexical) |
-| **Category Bonus** | ❌ None | ✅ Dynamic (+0.05 or +0.08) |
+| **Category Bonus** | ❌ None | ✅ **ESCO-based** (+0.05 or +0.08) |
+| **Category Dataset** | ❌ None | ✅ **3,039 ESCO occupations** |
+| **Category Matching** | ❌ None | ✅ **Semantic similarity** (not keywords) |
 | **Noise Penalty** | ❌ None | ✅ Yes (-0.03 for irrelevant) |
 | **Embedding Cache** | ❌ None | ✅ Yes (.npy files) |
 | **Random Seeds** | ❌ Random | ✅ Fixed (SEED=42) |
@@ -221,6 +234,7 @@ JD #01 - Sales Specialist @ Google
 | **Reproducibility** | ±0.05 (unstable) | ±0.001 (stable) |
 | **Speed (first run)** | 3 min | 3 min |
 | **Speed (rerun)** | 3 min | 10 sec ⚡ (18x faster) |
+| **Scalability** | ❌ Manual keywords | ✅ **Auto ESCO mapping** |
 | **Production Ready** | ❌ Failed | ✅ Yes |
 | **Use Case** | ❌ Reference only | ✅ **USE THIS ONE** |
 
@@ -395,7 +409,91 @@ print("New (03c):", df_new[df_new['JD_Index']==0]['Category'].head(5).tolist())
 
 ## 🎯 **NEXT STEPS (Optional - Advanced):**
 
-### **Fine-tuning Model cho Domain cụ thể**
+### **A. ESCO Dataset Integration** 🌐 ⭐ **IMPLEMENTED!**
+
+**✅ ĐÃ TÍCH HỢP vào Version 03c!**
+
+**🌐 ESCO là gì?**
+
+ESCO = **European Skills, Competences, Qualifications and Occupations**
+- EU standard taxonomy cho occupations & skills
+- **3,039 occupations** (sales engineer, software developer, marketing manager...)
+- **13,485 skills** (Python, leadership, data analysis...)
+- **129,004 relations** (occupation ↔ required skills)
+
+**❓ Tại sao dùng ESCO?**
+
+**OLD approach (Hard-coded keywords):**
+```python
+CATEGORY_MAP = {
+    'sales': ['SALES', 'BUSINESS-DEVELOPMENT'],  # Chỉ 18 keywords
+    'developer': ['INFORMATION-TECHNOLOGY'],
+    # ... manual mapping, không scalable
+}
+```
+❌ Limited: Chỉ 18 keywords cho 24 categories  
+❌ Manual: Phải update thủ công khi có ngành mới  
+❌ Can't handle: "Machine Learning Engineer", "DevOps", "UX Researcher"
+
+**NEW approach (ESCO semantic matching):**
+```python
+# Load 3,039 ESCO occupations
+esco_df = pd.read_csv('D:/HanDao/occupations_en.csv')
+esco_embeddings = model.encode(esco_df['preferredLabel'])
+
+# Semantic matching (not keyword counting!)
+similarity = cosine_similarity(jd_embedding, esco_occupation_embedding)
+if similarity > 0.7: bonus = 0.08
+elif similarity > 0.5: bonus = 0.05
+```
+✅ **Scalable**: 3,039 occupations automatically  
+✅ **Semantic**: "Sales Specialist" → "sales engineer" (0.588 similarity)  
+✅ **Automatic**: No manual updates needed
+
+**📊 Test Results:**
+```
+JD: "Sales Specialist" → Top ESCO matches:
+  1. sales engineer (0.588)
+  2. technical sales representative (0.567)
+  3. commercial sales representative (0.558)
+  
+JD: "Software Engineer Python Django" → Top ESCO matches:
+  1. application engineer (0.524)
+  2. software developer (0.511)
+  3. web developer (0.482)
+  
+JD: "Marketing Manager digital marketing SEO" → Top ESCO match:
+  1. digital marketing manager (0.839) 🔥 PERFECT!
+```
+
+**⚡ Performance Optimizations:**
+```python
+# Pre-compute category → ESCO mappings (24 categories)
+category_embeddings_dict = {}  # Cache results
+
+# Pre-compute JD → ESCO mappings (15 JDs)
+jd_esco_matches = []  # Cache results
+
+# Final ranking: Just lookup cached data (instant!)
+bonus = get_esco_category_bonus_fast(jd_esco_idx, cv_category)
+```
+→ **No recalculation** in ranking loop  
+→ Fast & efficient!
+
+**📁 Files needed:**
+- `D:/HanDao/occupations_en.csv` (3,039 occupations, 2.8 MB)
+- `D:/HanDao/skills_en.csv` (13,485 skills, 9 MB) - optional
+- `esco_embeddings.npy` (cached embeddings, auto-generated)
+
+**🎓 Kết luận:**
+✅ **ĐÃ TÍCH HỢP** vào 03c  
+✅ Thay thế hard-coded keywords  
+✅ Scalable & automatic  
+✅ Production-ready!
+
+---
+
+### **B. Fine-tuning Model cho Domain cụ thể**
 
 **❓ Fine-tuning là gì?**
 
@@ -553,7 +651,10 @@ Version 03 (Baseline)          Version 03c (Production)
 
 **Tier 2 - Quality:**
 4. 🔀 **Hybrid scoring** → 70% semantic + 30% lexical
-5. 🎯 **Dynamic bonuses** → +0.05 or +0.08 based on keyword count
+5. 🎯 **ESCO-based Dynamic Category Bonus** → +0.08 (high similarity >0.7), +0.05 (medium >0.5), 0.00 (low)
+   - Uses 3,039 ESCO occupations for semantic matching
+   - Replaces hard-coded keyword mapping (18 keywords → 3K+ occupations)
+   - Scalable & automatic
 6. 🚫 **Noise penalties** → -0.03 for irrelevant CVs
 
 ### **📈 Kết quả đạt được:**
