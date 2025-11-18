@@ -31,20 +31,11 @@ python -m venv .venv
 .venv\Scripts\Activate.ps1
 ```
 
-**Giải thích:**
-- `.venv` là folder chứa Python interpreter riêng biệt
-- Sau khi activate, terminal hiện `(.venv)` ở đầu dòng
-- Tất cả `pip install` sẽ cài vào `.venv`, không ảnh hưởng system Python
 
----
 
 ### 📚 Bước 2: Cài đặt thư viện
 
-#### **Tại sao cần bước này?**
-- FastAPI: Web framework để build API
-- Sentence-transformers: Load BERT model
-- PDFplumber: Extract text từ PDF
-- Scikit-learn: Tính cosine similarity
+
 
 ```powershell
 # Cài đặt tất cả dependencies
@@ -75,10 +66,6 @@ contractions              # Text preprocessing
 
 ### 🤖 Bước 3: Kiểm tra model đã có chưa
 
-#### **Tại sao cần bước này?**
-- BERT model nặng ~90MB, download mất thời gian
-- Nếu đã có sẵn, khỏi download lại (tiết kiệm bandwidth)
-- Hệ thống sẽ check local trước, không có mới tải từ Hugging Face
 
 ```powershell
 # Kiểm tra xem model đã tồn tại chưa
@@ -119,11 +106,7 @@ models/
 python app_bert_only.py
 ```
 
-**Hoặc với Uvicorn directly (có auto-reload):**
-```powershell
-# Development mode với auto-reload
-uvicorn app_bert_only:app --host 0.0.0.0 --port 8002 --reload
-```
+
 
 **Giải thích các tham số:**
 - `app_bert_only:app`: File `app_bert_only.py`, object `app`
@@ -1813,3 +1796,4 @@ Scalability:
 ---
 
 **Made with ❤️ by Han Dao**
+
