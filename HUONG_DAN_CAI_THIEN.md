@@ -1,757 +1,910 @@
-# 🚀 HƯỚNG DẪN CẢI THIỆN CV-JD MATCHING
+# 🎯 CV-JD Matching API - Hướng dẫn Cài đặt & Tích hợp Dart/Flutter
 
-## 📋 TÓM TẮT CÁC CẢI THIỆN
+## 📋 Mục lục
 
-### ❌ **VẤN ĐỀ CŨ (Version 03 - Baseline):**
-```
-JD: "Sales Specialist" 
-→ Top match: CHEF (0.94), FITNESS (0.93), HR (0.92) (SAI!)
-
-JD: "Apple Solutions Consultant"
-→ Top match: CHEF (0.96) (SAI HOÀN TOÀN!)
-
-Nguyên nhân:
-- Chỉ extract Skills + Education (2 fields)
-- Text quá ngắn (~100-120 words)
-- Dùng raw DistilBERT (chưa optimize cho similarity)
-- Scores quá cao và gần nhau (0.93-0.96)
-- Không có category filtering
-- Không có embedding caching → mỗi lần chạy lại 10-15 phút
-- Kết quả không reproducible (±0.05 variation)
-```
+1. [Cài đặt & Chạy Server](#1-cài-đặt--chạy-server)
+2. [Tích hợp Dart/Flutter](#2-tích-hợp-dartflutter)
+3. [API Endpoints](#3-api-endpoints)
+4. [Troubleshooting](#4-troubleshooting)
 
 ---
 
-## ✅ **GIẢI PHÁP - 3 PHIÊN BẢN NÂNG CẤP:**
+## 1. Cài đặt & Chạy Server
 
----
+### 📁 Cấu trúc Project
 
-### **BƯỚC 1: Cải thiện Data Extraction** ⭐⭐⭐⭐⭐
-
-**File: `01_pdf-data-extraction.ipynb`**
-
-**Thay đổi:**
-```python
-# CŨ: Chỉ extract 2 fields
-return {
-    'Skills': skills,
-    'Education': education
-}
-
-# MỚI: Extract 6 fields
-return {
-    'Job_Title': job_title,        # NEW - Quan trọng!
-    'Experience': experience,      # NEW - Quan trọng nhất!
-    'Projects': projects,          # NEW
-    'Skills': skills,              # Existing
-    'Education': education,        # Existing
-    'Certifications': certifications  # NEW
-}
+```
+52200142_DaoThuyBaoHan_MatchingJD/
+├── app.py                      # FastAPI server (Hybrid: 70% BERT + 30% TF-IDF)
+├── app_bert_only.py            # FastAPI server (100% BERT, NO TF-IDF)
+├── download_model.py           # Script tải model về local
+├── requirements.txt            # Dependencies
+├── occupations_en.csv          # ESCO data (3,039 occupations)
+├── esco_embeddings.npy         # ESCO embeddings (cached)
+├── models/                     # Sentence-BERT model (local)
+│   └── all-MiniLM-L6-v2/
+└── data/                       # CV datasets
+    ├── INFORMATION-TECHNOLOGY/
+    ├── SALES/
+    ├── HR/
+    └── ...
 ```
 
-**Tại sao quan trọng:**
-- ✅ Job Title: "Software Engineer" vs "Chef" → Phân biệt rõ ngay
-- ✅ Experience: Context đầy đủ về công việc đã làm
-- ✅ Projects: Thể hiện kỹ năng thực tế
-- ✅ Text dài hơn → BERT hiểu context tốt hơn
-
-**Output:** `pdf_extracted_full_details.csv` với 6 columns thay vì 2
-
-**Smart Caching thêm:**
-```python
-FORCE_REEXTRACT = False  # Set True to re-extract
-
-if os.path.exists('pdf_extracted_full_details.csv') and not FORCE_REEXTRACT:
-    df = pd.read_csv('pdf_extracted_full_details.csv')
-    # 1 second load thay vì 10 phút extract!
-```
-
----
-
-### **BƯỚC 2: Dùng Sentence-BERT** ⭐⭐⭐⭐
-
-**Thay đổi:**
-```python
-# CŨ: Raw DistilBERT (general purpose)
-from transformers import DistilBertTokenizer, DistilBertModel
-tokenizer = DistilBertTokenizer.from_pretrained('distilbert-base-uncased')
-model = DistilBertModel.from_pretrained('distilbert-base-uncased')
-
-# MỚI: Sentence-BERT (optimized for similarity!)
-from sentence_transformers import SentenceTransformer
-model = SentenceTransformer('all-MiniLM-L6-v2')  # Fast & accurate
-```
-
-**Ưu điểm Sentence-BERT:**
-- ✅ Train sẵn cho similarity tasks
-- ✅ Hiểu semantic relationships tốt hơn
-- ✅ Dễ dùng hơn (1 line code thay vì 5 lines)
-- ✅ Nhanh hơn và nhẹ hơn (80MB vs 250MB)
-- ✅ Better score distribution (phân biệt rõ hơn)
-
----
-
-### **BƯỚC 3: Category Filtering** ⭐⭐⭐
-
-**File: `03b_improved-cv-jd-matching.ipynb`**
-
-**Thêm logic filtering:**
-```python
-# Define category mapping
-CATEGORY_MAP = {
-    'sales': ['SALES', 'BUSINESS-DEVELOPMENT'],
-    'developer': ['INFORMATION-TECHNOLOGY', 'ENGINEERING'],
-    'designer': ['DESIGNER', 'DIGITAL-MEDIA'],
-    # ...
-}
-
-# Give bonus to matching categories
-def get_category_bonus(jd_text, cv_category):
-    if category_matches(jd_text, cv_category):
-        return 0.05  # +5% bonus
-    return 0.0
-```
-
-**Ưu điểm:**
-- ✅ Ưu tiên CVs đúng ngành nghề
-- ✅ "Sales Specialist" sẽ ưu tiên SALES category
-- ✅ Giảm false positives (CHEF cho Apple Consultant)
-
----
-
-### 🌟 **VERSION 03c: STABLE + IMPROVED (90%+ Accuracy)**
-
-**File: `03c_stable-improved-cv-jd-matching.ipynb`**
-
-#### **Cải thiện TIER 1: Stability (Reproducibility)**
-
-**1. Random Seed Fixing** 🎲
-```python
-SEED = 42
-random.seed(SEED)
-np.random.seed(SEED)
-torch.manual_seed(SEED)
-torch.backends.cudnn.deterministic = True
-
-→ Kết quả giống nhau 100% mỗi lần chạy (±0.001)
-```
-
-**2. Embedding Caching** �
-```python
-# Save embeddings để reuse
-np.save('embeddings_cache/jd_embeddings.npy', jd_embeddings)
-np.save('embeddings_cache/cv_embeddings.npy', cv_embeddings)
-
-# Next run: Load instant!
-jd_embeddings = np.load('embeddings_cache/jd_embeddings.npy')
-
-→ Lần đầu: 3 phút
-→ Lần sau: 10 giây (300x faster!)
-```
-
-**3. Enhanced Text Normalization** 🧹
-```python
-# Remove multiple spaces → single space
-text = re.sub(r'\s+', ' ', text)
-
-→ Embedding consistency tăng
-```
-
----
-
-#### **Cải thiện TIER 2: Quality (Better Results)**
-
-**4. Hybrid Scoring (Semantic + Lexical)** 🔀
-```python
-# Combine 2 approaches
-hybrid_scores = (0.7 * semantic_scores) + (0.3 * tfidf_scores)
-
-→ 70% meaning-based + 30% keyword-based
-→ Captures both semantic understanding & exact keywords
-```
-
-**5. ESCO-based Dynamic Category Bonus** 🎯🌐
-```python
-# NEW: Use 3,039 ESCO occupations for semantic matching
-# Load ESCO dataset
-esco_df = pd.read_csv('D:/HanDao/occupations_en.csv')  # 3,039 occupations
-esco_embeddings = model.encode(esco_df['preferredLabel'])
-
-# Smart bonus based on ESCO similarity
-def get_esco_category_bonus_fast(jd_embedding_idx, cv_category):
-    # Match JD → ESCO occupation
-    # Match CV category → ESCO occupation
-    # Calculate similarity between them
-    if similarity > 0.7: return 0.08  # High match
-    elif similarity > 0.5: return 0.05  # Medium match
-    else: return 0.00
-
-→ Replaces hard-coded CATEGORY_MAP (18 keywords)
-→ Scalable to 3,039+ occupations automatically
-→ Semantic matching: "Sales Specialist" → "sales engineer" (0.588)
-→ Better than keyword counting
-```
-
-**6. Noise Penalty System** 🚫
-```python
-# Penalize clearly irrelevant CVs
-if 'developer' in jd and cv_category in ['CHEF', 'FITNESS']:
-    penalty = -0.03
-
-→ CHEF không còn match với Tech jobs
-```
-
-**Kết quả Version 03c:**
-```python
-JD #01 - Sales Specialist @ Google
-  1. CV 1158 | Score: 0.5153 (base: 0.4353) (+0.08 bonus) | CONSULTANT ✅
-  2. CV 1174 | Score: 0.5113 (base: 0.4313) (+0.08 bonus) | CONSULTANT ✅
-  3. CV  836 | Score: 0.5021 (base: 0.4221) (+0.08 bonus) | BUSINESS-DEV ✅
-
-→ Matching accuracy: 90%+
-→ 100% reproducible (±0.001)
-→ 50% faster with caching
-```
-
----
-
-##  **SO SÁNH 2 PHIÊN BẢN:**
-
-| Aspect | 03 (Baseline) ❌ | 03c (Production) ✅ |
-|--------|------------------|---------------------|
-| **Model** | DistilBERT | Sentence-BERT |
-| **Extraction** | 2 fields (Skills, Education) | 6 fields (Job_Title, Experience, Projects, Skills, Education, Certifications) |
-| **Text Length** | ~100 words | ~300 words |
-| **Scoring Method** | Semantic only | Hybrid (70% semantic + 30% lexical) |
-| **Category Bonus** | ❌ None | ✅ **ESCO-based** (+0.05 or +0.08) |
-| **Category Dataset** | ❌ None | ✅ **3,039 ESCO occupations** |
-| **Category Matching** | ❌ None | ✅ **Semantic similarity** (not keywords) |
-| **Noise Penalty** | ❌ None | ✅ Yes (-0.03 for irrelevant) |
-| **Embedding Cache** | ❌ None | ✅ Yes (.npy files) |
-| **Random Seeds** | ❌ Random | ✅ Fixed (SEED=42) |
-| **Score Range** | 0.93-0.96 (too high) | 0.42-0.52 (realistic) |
-| **Accuracy** | ~40% ❌ | ~90% ✅✅ |
-| **Reproducibility** | ±0.05 (unstable) | ±0.001 (stable) |
-| **Speed (first run)** | 3 min | 3 min |
-| **Speed (rerun)** | 3 min | 10 sec ⚡ (18x faster) |
-| **Scalability** | ❌ Manual keywords | ✅ **Auto ESCO mapping** |
-| **Production Ready** | ❌ Failed | ✅ Yes |
-| **Use Case** | ❌ Reference only | ✅ **USE THIS ONE** |
-
----
-
-## 📊 **KẾT QUẢ CHI TIẾT:**
-
-### **Version 03 (Baseline) - ❌ FAILED:**
-```
-JD: "Sales Specialist"
-  1. HR/18827609.pdf         - Score: 0.9415 ❌
-  2. AGRICULTURE/62994611.pdf - Score: 0.9388 ❌
-  3. ARTS/43622023.pdf       - Score: 0.9387 ❌
-  4. ACCOUNTANT/16237710.pdf - Score: 0.9377 ❌
-  5. HEALTHCARE/10466208.pdf - Score: 0.9314 ❌
-
-JD: "Apple Solutions Consultant"
-  1. CHEF/77777777.pdf       - Score: 0.9621 ❌❌❌
-
-→ KHÔNG có SALES/CONSULTANT nào trong top 5!
-→ Scores quá cao và gần nhau (0.93-0.96)
-→ Matching accuracy: ~40%
-```
-
-### **Version 03c (Stable + Improved) - ✅✅ PRODUCTION:**
-```
-🎯 JD #01 - Sales Specialist @ Google
-  1. CV 1158 | Score: 0.5153 (base: 0.4353) (+0.08 bonus) | CONSULTANT ✅
-  2. CV 1174 | Score: 0.5113 (base: 0.4313) (+0.08 bonus) | CONSULTANT ✅
-  3. CV  836 | Score: 0.5021 (base: 0.4221) (+0.08 bonus) | BUSINESS-DEV ✅
-  4. CV 1191 | Score: 0.5012 (base: 0.4212) (+0.08 bonus) | CONSULTANT ✅
-  5. CV 1240 | Score: 0.4939 (base: 0.4139) (+0.08 bonus) | CONSULTANT ✅
-
-🎯 JD #02 - Apple Solutions Consultant @ Apple
-  1. CV 2184 | Score: 0.4654 (base: 0.4654) | PUBLIC-RELATIONS ✅
-  2. CV 2271 | Score: 0.4437 (base: 0.3937) (+0.05) | SALES ✅
-  3. CV 1158 | Score: 0.4400 (base: 0.3900) (+0.05) | CONSULTANT ✅✅
-
-→ KHÔNG còn CHEF matching với Consultant!
-→ Scores 0.42-0.52 (excellent distribution)
-→ Dynamic bonus working (0.05 vs 0.08)
-→ Matching accuracy: 90%+
-→ 100% reproducible
-```
-
----
-
-## 🔧 **CÁCH SỬ DỤNG:**
-
-### **🚀 RECOMMENDED: Dùng Version 03c (Production-Ready)**
-
-#### **Step 1: Chạy Extraction (Chỉ cần 1 lần)**
+### 🚀 Bước 1: Cài đặt Dependencies
 
 ```bash
-# Mở: 01_pdf-data-extraction.ipynb
-# Run All Cells
-# Thời gian: ~10 phút (chỉ lần đầu)
+# Activate virtual environment
+.venv\Scripts\Activate.ps1
+
+# Install packages
+pip install -r requirements.txt
 ```
 
-**Output:** `pdf_extracted_full_details.csv` (11.1 MB, 2,470 CVs)
-
-**Verify:**
-```python
-df = pd.read_csv('pdf_extracted_full_details.csv')
-print(df.columns)
-# ['ID', 'Category', 'Job_Title', 'Experience', 'Projects', 'Skills', 'Education', 'Certifications']
-print(len(df))  # 2470 CVs
-```
-
-**⚡ Lần sau:** Set `FORCE_REEXTRACT = False` → Load 1 giây!
-
----
-
-#### **Step 2: Install Required Libraries**
+### 🚀 Bước 2: Tải Model về Local
 
 ```bash
-pip install sentence-transformers
-pip install scikit-learn
+python download_model.py
 ```
-
----
-
-#### **Step 3: Chạy Stable Matching (Notebook 03c) ⭐**
-
-```bash
-# Mở: 03c_stable-improved-cv-jd-matching.ipynb
-# Run All Cells từ đầu đến cuối
-```
-
-**Thứ tự cells quan trọng:**
-1. ✅ **Step 0:** Fix random seeds (PHẢI chạy đầu tiên!)
-2. ✅ **Step 1-7:** Load data và clean text
-3. ✅ **Step 8:** Create embeddings (lần đầu: 3 phút, lần sau: 10 giây)
-4. ✅ **Step 9-11:** Calculate hybrid scores
-5. ✅ **Step 12-13:** Apply bonuses & penalties
-6. ✅ **Step 14:** Generate rankings
-7. ✅ **Step 15:** Save to CSV
 
 **Output:**
-- Console: Top 5 candidates cho mỗi JD
-- File: `cv_jd_matching_results_stable.csv`
-
----
-
-#### **Step 4: So sánh kết quả với version cũ (Optional)**
-
-Nếu muốn thấy improvement:
-
-```python
-# So sánh 2 versions
-df_old = pd.read_csv('cv_jd_matching_results.csv')        # Version 03 (baseline)
-df_new = pd.read_csv('cv_jd_matching_results_stable.csv') # Version 03c (production)
-
-print("📊 Score comparison:")
-print(f"Old (03) avg: {df_old['Similarity_Score'].mean():.4f}")  # ~0.94 (too high)
-print(f"New (03c) avg: {df_new['Final_Score'].mean():.4f}")      # ~0.48 (realistic)
-
-print("\n📈 Top categories for 'Sales Specialist' JD:")
-print("Old (03):", df_old[df_old['JD_Index']==0]['Category'].head(5).tolist())
-# → ['HR', 'AGRICULTURE', 'ARTS', 'ACCOUNTANT', 'HEALTHCARE'] ❌
-
-print("New (03c):", df_new[df_new['JD_Index']==0]['Category'].head(5).tolist())
-# → ['CONSULTANT', 'CONSULTANT', 'BUSINESS-DEVELOPMENT', 'CONSULTANT', 'CONSULTANT'] ✅
+```
+✅ SUCCESS! Model downloaded and saved locally!
+📁 Location: D:\...\models\all-MiniLM-L6-v2
 ```
 
----
+### 🚀 Bước 3: Chạy Server
 
-## ⚡ **TRANSFORMATION SUMMARY:**
+**Option 1: Hybrid Server (70% BERT + 30% TF-IDF)**
+```bash
+python app.py
+```
+- **Server:** http://localhost:8000
+- **Swagger UI:** http://localhost:8000/docs
+- **Scoring:** 70% semantic (BERT) + 30% lexical (TF-IDF)
 
-| Aspect | Before (03) ❌ | After (03c) ✅ | Change |
-|--------|----------------|----------------|--------|
-| **Accuracy** | 40% | 90% | +125% 🎯 |
-| **Matching** | CHEF for Consultant | Correct categories | Fixed! |
-| **Scores** | 0.93-0.96 | 0.42-0.52 | Better range |
-| **Reproducible** | ±0.05 | ±0.001 | 50x better |
-| **Speed (rerun)** | 3 min | 10 sec | 18x faster ⚡ |
-| **Data fields** | 2 | 6 | 3x more context |
-| **Model** | DistilBERT | Sentence-BERT | Optimized |
-| **Scoring** | Semantic only | Hybrid (70-30) | Smarter |
-| **Status** | ❌ Failed | ✅ Production | Ready! |
+**Option 2: Pure AI Server (100% BERT - Recommended)**
+```bash
+python app_bert_only.py
+```
+- **Server:** http://localhost:8002
+- **Swagger UI:** http://localhost:8002/docs
+- **Scoring:** 100% semantic (BERT AI model)
+- **Features:**
+  - ✅ CV field analysis (email, phone, education, experience, skills)
+  - ✅ Completeness checking
+  - ✅ Debug endpoints for testing
 
----
-
-## 📈 **IMPROVEMENTS ACHIEVED:**
-
-### **1. Matching Accuracy: 40% → 90%** 🎯
-- **Before (03):** CHEF matched with Apple Consultant ❌
-- **After (03c):** Correct categories (CONSULTANT, SALES, BUSINESS-DEV) ✅
-- **Improvement:** 125% increase in accuracy
-
-### **2. Score Distribution: Much Better** 📊
-- **Before (03):** 0.93-0.96 (too high, can't distinguish)
-- **After (03c):** 0.42-0.52 (realistic, clear separation)
-- **Benefit:** Easy to see which CVs are truly better matches
-
-### **3. Reproducibility: Random → Fixed** 🔒
-- **Before (03):** Different results each run (±0.05 variation)
-- **After (03c):** 100% reproducible (±0.001 variation)
-- **Benefit:** Critical for research papers and production systems
-
-### **4. Speed: 10-15 min → 10 sec** ⚡
-- **First run:** ~3 minutes (compute + cache)
-- **Subsequent runs:** ~10 seconds (load cache)
-- **Improvement:** 18x faster!
-
-### **5. Semantic Understanding: Dramatically Better** 🧠
-- **Before (03):** Keyword-like matching only (DistilBERT)
-- **After (03c):** Hybrid approach (70% semantic + 30% lexical + smart bonuses)
-- **Benefit:** Understands both meaning AND important keywords
+> **💡 Khuyến nghị:** Dùng `app_bert_only.py` cho kết quả AI chính xác hơn!
 
 ---
 
-## 🎯 **NEXT STEPS (Optional - Advanced):**
+## 2. Tích hợp Dart/Flutter
 
-### **A. ESCO Dataset Integration** 🌐 ⭐ **IMPLEMENTED!**
+### Bước 1: Thêm Dependencies
 
-**✅ ĐÃ TÍCH HỢP vào Version 03c!**
+File `pubspec.yaml`:
 
-**🌐 ESCO là gì?**
+```yaml
+dependencies:
+  http: ^1.1.0
+  file_picker: ^6.1.1
+```
 
-ESCO = **European Skills, Competences, Qualifications and Occupations**
-- EU standard taxonomy cho occupations & skills
-- **3,039 occupations** (sales engineer, software developer, marketing manager...)
-- **13,485 skills** (Python, leadership, data analysis...)
-- **129,004 relations** (occupation ↔ required skills)
+Chạy:
+```bash
+flutter pub get
+```
 
-**❓ Tại sao dùng ESCO?**
+### Bước 2: Tạo Data Models
 
-**OLD approach (Hard-coded keywords):**
-```python
-CATEGORY_MAP = {
-    'sales': ['SALES', 'BUSINESS-DEVELOPMENT'],  # Chỉ 18 keywords
-    'developer': ['INFORMATION-TECHNOLOGY'],
-    # ... manual mapping, không scalable
+Tạo file `lib/models/cv_match_models.dart`:
+
+```dart
+/// Model kết quả matching
+class CVMatchResult {
+  final String status;
+  final String jdSummary;
+  final int totalCvsUploaded;
+  final int totalCvsProcessed;
+  final List<String>? failedCvs;
+  final List<TopMatch> topMatches;
+  final String timestamp;
+
+  const CVMatchResult({
+    required this.status,
+    required this.jdSummary,
+    required this.totalCvsUploaded,
+    required this.totalCvsProcessed,
+    this.failedCvs,
+    required this.topMatches,
+    required this.timestamp,
+  });
+
+  factory CVMatchResult.fromJson(Map<String, dynamic> json) {
+    return CVMatchResult(
+      status: json['status'] as String,
+      jdSummary: json['jd_summary'] as String,
+      totalCvsUploaded: json['total_cvs_uploaded'] as int,
+      totalCvsProcessed: json['total_cvs_processed'] as int,
+      failedCvs: json['failed_cvs'] != null 
+          ? List<String>.from(json['failed_cvs'] as List) 
+          : null,
+      topMatches: (json['top_matches'] as List)
+          .map((match) => TopMatch.fromJson(match as Map<String, dynamic>))
+          .toList(),
+      timestamp: json['timestamp'] as String,
+    );
+  }
+}
+
+/// Model cho từng CV match
+class TopMatch {
+  final int rank;
+  final String cvName;
+  final double score;
+  final double bertScore;  // Đổi từ baseScore -> bertScore
+  final double escoBonus;
+  final double matchPercentage;
+  final String category;
+  final int cvIndex;
+  final FieldAnalysis? fieldAnalysis;  // Thêm field analysis
+
+  const TopMatch({
+    required this.rank,
+    required this.cvName,
+    required this.score,
+    required this.bertScore,
+    required this.escoBonus,
+    required this.matchPercentage,
+    required this.category,
+    required this.cvIndex,
+    this.fieldAnalysis,
+  });
+
+  factory TopMatch.fromJson(Map<String, dynamic> json) {
+    return TopMatch(
+      rank: json['rank'] as int,
+      cvName: json['cv_name'] as String,
+      score: (json['score'] as num).toDouble(),
+      bertScore: (json['bert_score'] as num).toDouble(),  // Đổi key
+      escoBonus: (json['esco_bonus'] as num).toDouble(),
+      matchPercentage: (json['match_percentage'] as num).toDouble(),
+      category: json['category'] as String,
+      cvIndex: json['cv_index'] as int,
+      fieldAnalysis: json['field_analysis'] != null
+          ? FieldAnalysis.fromJson(json['field_analysis'] as Map<String, dynamic>)
+          : null,
+    );
+  }
+
+  // Helper getters
+  bool get isExcellent => matchPercentage >= 80;
+  bool get isGood => matchPercentage >= 70;
+  bool get isFair => matchPercentage >= 60;
+}
+
+/// Model phân tích CV fields
+class FieldAnalysis {
+  final double completeness;
+  final List<String> missingFields;
+  final int filledFields;
+  final int totalFields;
+
+  const FieldAnalysis({
+    required this.completeness,
+    required this.missingFields,
+    required this.filledFields,
+    required this.totalFields,
+  });
+
+  factory FieldAnalysis.fromJson(Map<String, dynamic> json) {
+    return FieldAnalysis(
+      completeness: (json['completeness'] as num).toDouble(),
+      missingFields: List<String>.from(json['missing_fields'] as List),
+      filledFields: json['filled_fields'] as int,
+      totalFields: json['total_fields'] as int,
+    );
+  }
+
+  // Helper getters
+  bool get isComplete => completeness >= 90;
+  bool get needsImprovement => completeness < 70;
 }
 ```
-❌ Limited: Chỉ 18 keywords cho 24 categories  
-❌ Manual: Phải update thủ công khi có ngành mới  
-❌ Can't handle: "Machine Learning Engineer", "DevOps", "UX Researcher"
 
-**NEW approach (ESCO semantic matching):**
-```python
-# Load 3,039 ESCO occupations
-esco_df = pd.read_csv('D:/HanDao/occupations_en.csv')
-esco_embeddings = model.encode(esco_df['preferredLabel'])
+### Bước 3: Tạo API Service
 
-# Semantic matching (not keyword counting!)
-similarity = cosine_similarity(jd_embedding, esco_occupation_embedding)
-if similarity > 0.7: bonus = 0.08
-elif similarity > 0.5: bonus = 0.05
+Tạo file `lib/services/cv_matching_api_service.dart`:
+
+```dart
+import 'dart:convert';
+import 'dart:io';
+import 'package:http/http.dart' as http;
+import '../models/cv_match_models.dart';
+
+class CVMatchingApiService {
+  final String baseUrl;
+
+  CVMatchingApiService({
+    this.baseUrl = 'http://localhost:8002',  // Port 8002 cho BERT-only server
+  });
+
+  /// Match nhiều CV với Job Description
+  Future<CVMatchResult> matchCVs({
+    required String jdText,
+    required List<File> cvFiles,
+    int topN = 5,
+  }) async {
+    try {
+      final url = Uri.parse('$baseUrl/match');
+      var request = http.MultipartRequest('POST', url);
+
+      request.fields['jd_text'] = jdText;
+      request.fields['top_n'] = topN.toString();
+
+      for (var file in cvFiles) {
+        final fileName = file.path.split(Platform.pathSeparator).last;
+        request.files.add(
+          await http.MultipartFile.fromPath(
+            'cv_files',
+            file.path,
+            filename: fileName,
+          ),
+        );
+      }
+
+      final streamedResponse = await request.send();
+      final response = await http.Response.fromStream(streamedResponse);
+
+      if (response.statusCode == 200) {
+        final jsonData = json.decode(response.body) as Map<String, dynamic>;
+        return CVMatchResult.fromJson(jsonData);
+      } else {
+        throw Exception('API Error ${response.statusCode}: ${response.body}');
+      }
+    } catch (e) {
+      print('❌ Error in matchCVs: $e');
+      rethrow;
+    }
+  }
+
+  /// Tính điểm cho 1 CV đơn lẻ
+  Future<Map<String, dynamic>> scoreSingleCV({
+    required String jdText,
+    required File cvFile,
+  }) async {
+    try {
+      final url = Uri.parse('$baseUrl/score-single');
+      var request = http.MultipartRequest('POST', url);
+
+      request.fields['jd_text'] = jdText;
+      final fileName = cvFile.path.split(Platform.pathSeparator).last;
+      request.files.add(
+        await http.MultipartFile.fromPath(
+          'cv_file',
+          cvFile.path,
+          filename: fileName,
+        ),
+      );
+
+      final streamedResponse = await request.send();
+      final response = await http.Response.fromStream(streamedResponse);
+
+      if (response.statusCode == 200) {
+        return json.decode(response.body) as Map<String, dynamic>;
+      } else {
+        throw Exception('API Error ${response.statusCode}: ${response.body}');
+      }
+    } catch (e) {
+      print('❌ Error in scoreSingleCV: $e');
+      rethrow;
+    }
+  }
+
+  /// Kiểm tra health của server
+  Future<bool> checkHealth() async {
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl/'),
+      ).timeout(const Duration(seconds: 5));
+      return response.statusCode == 200;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  /// Lấy thống kê server
+  Future<Map<String, dynamic>> getStats() async {
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl/stats'),
+      ).timeout(const Duration(seconds: 5));
+      
+      if (response.statusCode == 200) {
+        return json.decode(response.body) as Map<String, dynamic>;
+      } else {
+        throw Exception('Failed to get stats: ${response.statusCode}');
+      }
+    } catch (e) {
+      print('❌ Error getting stats: $e');
+      rethrow;
+    }
+  }
+}
 ```
-✅ **Scalable**: 3,039 occupations automatically  
-✅ **Semantic**: "Sales Specialist" → "sales engineer" (0.588 similarity)  
-✅ **Automatic**: No manual updates needed
 
-**📊 Test Results:**
-```
-JD: "Sales Specialist" → Top ESCO matches:
-  1. sales engineer (0.588)
-  2. technical sales representative (0.567)
-  3. commercial sales representative (0.558)
+### Bước 4: Tạo Flutter UI
+
+Tạo file `lib/screens/cv_matching_screen.dart`:
+
+```dart
+import 'package:flutter/material.dart';
+import 'package:file_picker/file_picker.dart';
+import 'dart:io';
+import '../services/cv_matching_api_service.dart';
+import '../models/cv_match_models.dart';
+
+class CVMatchingScreen extends StatefulWidget {
+  const CVMatchingScreen({Key? key}) : super(key: key);
+
+  @override
+  State<CVMatchingScreen> createState() => _CVMatchingScreenState();
+}
+
+class _CVMatchingScreenState extends State<CVMatchingScreen> {
+  final CVMatchingApiService _apiService = CVMatchingApiService(
+    baseUrl: 'http://localhost:8002',  // Dùng port 8002 cho BERT-only
+  );
   
-JD: "Software Engineer Python Django" → Top ESCO matches:
-  1. application engineer (0.524)
-  2. software developer (0.511)
-  3. web developer (0.482)
-  
-JD: "Marketing Manager digital marketing SEO" → Top ESCO match:
-  1. digital marketing manager (0.839) 🔥 PERFECT!
+  final TextEditingController _jdController = TextEditingController();
+  List<File> _selectedCVs = [];
+  CVMatchResult? _matchResult;
+  bool _isLoading = false;
+
+  Future<void> _pickCVFiles() async {
+    try {
+      FilePickerResult? pickerResult = await FilePicker.platform.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: ['pdf'],
+        allowMultiple: true,
+      );
+
+      if (pickerResult != null) {
+        setState(() {
+          _selectedCVs = pickerResult.paths
+              .where((path) => path != null)
+              .map((path) => File(path!))
+              .toList();
+        });
+        _showSnackBar('✅ Đã chọn ${_selectedCVs.length} file CV');
+      }
+    } catch (e) {
+      _showSnackBar('❌ Lỗi khi chọn file: $e', isError: true);
+    }
+  }
+
+  Future<void> _submitMatching() async {
+    if (_jdController.text.trim().isEmpty) {
+      _showSnackBar('⚠️ Vui lòng nhập Job Description', isError: true);
+      return;
+    }
+
+    if (_selectedCVs.isEmpty) {
+      _showSnackBar('⚠️ Vui lòng chọn ít nhất 1 file CV', isError: true);
+      return;
+    }
+
+    setState(() {
+      _isLoading = true;
+      _matchResult = null;
+    });
+
+    try {
+      final result = await _apiService.matchCVs(
+        jdText: _jdController.text,
+        cvFiles: _selectedCVs,
+        topN: 5,
+      );
+
+      setState(() {
+        _matchResult = result;
+        _isLoading = false;
+      });
+
+      _showSnackBar('✅ Hoàn thành! Xử lý ${result.totalCvsProcessed} CVs');
+    } catch (e) {
+      setState(() {
+        _isLoading = false;
+      });
+      _showSnackBar('❌ Lỗi: $e', isError: true);
+    }
+  }
+
+  void _showSnackBar(String message, {bool isError = false}) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: isError ? Colors.red : Colors.green,
+      ),
+    );
+  }
+
+  Color _getScoreColor(double percentage) {
+    if (percentage >= 80) return Colors.green;
+    if (percentage >= 70) return Colors.lightGreen;
+    if (percentage >= 60) return Colors.orange;
+    return Colors.red;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('🎯 CV-JD Matching'),
+        backgroundColor: Colors.blue,
+      ),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            // Job Description Input
+            const Text(
+              '📝 Job Description',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 8),
+            TextField(
+              controller: _jdController,
+              maxLines: 8,
+              decoration: InputDecoration(
+                hintText: 'Nhập mô tả công việc...',
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                filled: true,
+                fillColor: Colors.grey[50],
+              ),
+            ),
+            const SizedBox(height: 24),
+
+            // CV File Picker
+            Text(
+              '📄 CV Files (${_selectedCVs.length} đã chọn)',
+              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 8),
+            ElevatedButton.icon(
+              onPressed: _pickCVFiles,
+              icon: const Icon(Icons.upload_file),
+              label: const Text('Chọn file PDF'),
+              style: ElevatedButton.styleFrom(
+                padding: const EdgeInsets.all(16),
+                backgroundColor: Colors.blueGrey,
+              ),
+            ),
+            
+            // Hiển thị danh sách CV
+            if (_selectedCVs.isNotEmpty) ...[
+              const SizedBox(height: 12),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: _selectedCVs.map((file) {
+                  final fileName = file.path.split(Platform.pathSeparator).last;
+                  return Chip(
+                    label: Text(fileName),
+                    deleteIcon: const Icon(Icons.close, size: 18),
+                    onDeleted: () {
+                      setState(() {
+                        _selectedCVs.remove(file);
+                      });
+                    },
+                  );
+                }).toList(),
+              ),
+            ],
+            const SizedBox(height: 24),
+
+            // Submit Button
+            ElevatedButton(
+              onPressed: _isLoading ? null : _submitMatching,
+              style: ElevatedButton.styleFrom(
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                backgroundColor: Colors.blue,
+              ),
+              child: _isLoading
+                  ? const SizedBox(
+                      height: 20,
+                      width: 20,
+                      child: CircularProgressIndicator(
+                        color: Colors.white,
+                        strokeWidth: 2,
+                      ),
+                    )
+                  : const Text(
+                      '🚀 Bắt đầu Matching',
+                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                    ),
+            ),
+            const SizedBox(height: 32),
+
+            // Results
+            if (_matchResult != null) ...[
+              Text(
+                '🎯 Top ${_matchResult!.topMatches.length} Matches',
+                style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 16),
+              ...List.generate(_matchResult!.topMatches.length, (index) {
+                final match = _matchResult!.topMatches[index];
+                return Card(
+                  elevation: 2,
+                  margin: const EdgeInsets.only(bottom: 12),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: ListTile(
+                    contentPadding: const EdgeInsets.all(16),
+                    leading: CircleAvatar(
+                      radius: 24,
+                      backgroundColor: _getScoreColor(match.matchPercentage),
+                      child: Text(
+                        '#${match.rank}',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                    title: Text(
+                      match.cvName,
+                      style: const TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                    subtitle: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const SizedBox(height: 8),
+                        Text(
+                          'Score: ${match.matchPercentage.toStringAsFixed(1)}%',
+                          style: TextStyle(
+                            color: _getScoreColor(match.matchPercentage),
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        Text('📂 ${match.category}'),
+                        
+                        // Field Analysis
+                        if (match.fieldAnalysis != null) ...[
+                          const SizedBox(height: 4),
+                          Text(
+                            '✅ Completeness: ${match.fieldAnalysis!.completeness.toStringAsFixed(0)}%',
+                            style: TextStyle(
+                              color: match.fieldAnalysis!.isComplete
+                                  ? Colors.green
+                                  : match.fieldAnalysis!.needsImprovement
+                                      ? Colors.orange
+                                      : Colors.blue,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 12,
+                            ),
+                          ),
+                          if (match.fieldAnalysis!.missingFields.isNotEmpty)
+                            Text(
+                              '⚠️ Missing: ${match.fieldAnalysis!.missingFields.take(2).join(", ")}${match.fieldAnalysis!.missingFields.length > 2 ? "..." : ""}',
+                              style: TextStyle(
+                                color: Colors.grey[600],
+                                fontSize: 11,
+                              ),
+                            ),
+                        ],
+                        
+                        if (match.escoBonus > 0)
+                          Container(
+                            margin: const EdgeInsets.only(top: 4),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 4,
+                            ),
+                            decoration: BoxDecoration(
+                              color: Colors.green[50],
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                            child: Text(
+                              '🎯 ESCO Bonus: +${match.escoBonus.toStringAsFixed(3)}',
+                              style: TextStyle(
+                                color: Colors.green[700],
+                                fontWeight: FontWeight.bold,
+                                fontSize: 12,
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
+                    trailing: Icon(
+                      match.isExcellent
+                          ? Icons.star
+                          : match.isGood
+                              ? Icons.star_half
+                              : Icons.star_border,
+                      color: _getScoreColor(match.matchPercentage),
+                      size: 32,
+                    ),
+                  ),
+                );
+              }),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  @override
+  void dispose() {
+    _jdController.dispose();
+    super.dispose();
+  }
+}
 ```
 
-**⚡ Performance Optimizations:**
+### Bước 5: Sử dụng trong App
+
+```dart
+import 'package:flutter/material.dart';
+import 'screens/cv_matching_screen.dart';
+
+void main() {
+  runApp(const MyApp());
+}
+
+class MyApp extends StatelessWidget {
+  const MyApp({Key? key}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title: 'CV-JD Matching',
+      theme: ThemeData(
+        primarySwatch: Colors.blue,
+      ),
+      home: const CVMatchingScreen(),
+    );
+  }
+}
+```
+
+---
+
+## 3. API Endpoints
+
+### POST /match
+Match nhiều CV với JD
+
+**Request:**
+```
+POST http://localhost:8002/match
+Content-Type: multipart/form-data
+
+jd_text: "Job description text..."
+cv_files: [file1.pdf, file2.pdf, ...]
+top_n: 5
+```
+
+**Response:**
+```json
+{
+  "status": "success",
+  "scoring_method": "100% BERT (no TF-IDF)",
+  "top_matches": [
+    {
+      "rank": 1,
+      "cv_name": "john_doe.pdf",
+      "score": 0.85,
+      "bert_score": 0.82,
+      "esco_bonus": 0.03,
+      "match_percentage": 85.0,
+      "category": "INFORMATION-TECHNOLOGY",
+      "field_analysis": {
+        "completeness": 86.7,
+        "missing_fields": ["other.has_certifications", "other.has_languages"],
+        "filled_fields": 13,
+        "total_fields": 15
+      }
+    }
+  ],
+  "total_cvs_processed": 10
+}
+```
+
+### POST /score-single
+Score 1 CV với JD
+
+**Request:**
+```
+POST http://localhost:8002/score-single
+Content-Type: multipart/form-data
+
+jd_text: "Job description..."
+cv_file: single.pdf
+```
+
+### POST /analyze-cv
+Phân tích CV fields (email, phone, education, experience, skills)
+
+**Request:**
+```
+POST http://localhost:8002/analyze-cv
+Content-Type: multipart/form-data
+
+cv_file: resume.pdf
+```
+
+**Response:**
+```json
+{
+  "status": "success",
+  "cv_name": "resume.pdf",
+  "analysis": {
+    "completeness_percentage": 86.7,
+    "filled_fields": 13,
+    "total_fields": 15,
+    "missing_fields": [
+      "other.has_certifications",
+      "other.has_languages"
+    ],
+    "fields": {
+      "contact": {"email": true, "phone": true, "address": true},
+      "education": {"has_education": true, "has_dates": true},
+      "experience": {"has_experience": true, "has_dates": true, "has_responsibilities": true},
+      "skills": {"has_skills": true, "has_technical": true, "has_soft": true},
+      "other": {"has_summary": true, "has_certifications": false, "has_languages": false, "has_references": true}
+    }
+  }
+}
+```
+
+### POST /debug-cv
+Debug CV text extraction và regex matching
+
+**Request:**
+```
+POST http://localhost:8002/debug-cv
+Content-Type: multipart/form-data
+
+cv_file: resume.pdf
+```
+
+### GET /stats
+Thông tin server và model
+
+```
+GET http://localhost:8002/stats
+```
+
+**Response:**
+```json
+{
+  "model": {
+    "loaded": true,
+    "name": "all-MiniLM-L6-v2",
+    "type": "Sentence-BERT (BERT-based)",
+    "scoring": "100% Semantic (NO TF-IDF)"
+  },
+  "esco": {
+    "loaded": true,
+    "occupations_count": 3039
+  }
+}
+```
+
+---
+
+## 4. Troubleshooting
+
+### ❌ Model không tải được
+
+**Giải pháp:**
+```bash
+# Tải lại model
+python download_model.py
+```
+
+### ❌ Lỗi "Connection refused" trong Flutter
+
+**Nguyên nhân:** Dùng `localhost` trên emulator/device
+
+**Giải pháp:**
+```dart
+// Android emulator
+CVMatchingApiService(baseUrl: 'http://10.0.2.2:8002')
+
+// iOS simulator
+CVMatchingApiService(baseUrl: 'http://localhost:8002')
+
+// Physical device (cùng WiFi)
+CVMatchingApiService(baseUrl: 'http://192.168.1.100:8002')
+```
+
+### ❌ Port 8002 đã bị sử dụng
+
+**Giải pháp 1:** Kill process đang dùng port
+```powershell
+# Windows
+$p = (Get-NetTCPConnection -LocalPort 8002).OwningProcess
+Stop-Process -Id $p -Force
+```
+
+**Giải pháp 2:** Đổi port trong `app_bert_only.py`:
 ```python
-# Pre-compute category → ESCO mappings (24 categories)
-category_embeddings_dict = {}  # Cache results
-
-# Pre-compute JD → ESCO mappings (15 JDs)
-jd_esco_matches = []  # Cache results
-
-# Final ranking: Just lookup cached data (instant!)
-bonus = get_esco_category_bonus_fast(jd_esco_idx, cv_category)
-```
-→ **No recalculation** in ranking loop  
-→ Fast & efficient!
-
-**📁 Files needed:**
-- `D:/HanDao/occupations_en.csv` (3,039 occupations, 2.8 MB)
-- `D:/HanDao/skills_en.csv` (13,485 skills, 9 MB) - optional
-- `esco_embeddings.npy` (cached embeddings, auto-generated)
-
-**🎓 Kết luận:**
-✅ **ĐÃ TÍCH HỢP** vào 03c  
-✅ Thay thế hard-coded keywords  
-✅ Scalable & automatic  
-✅ Production-ready!
-
----
-
-### **B. Fine-tuning Model cho Domain cụ thể**
-
-**❓ Fine-tuning là gì?**
-
-Fine-tuning là việc **train thêm** (điều chỉnh) model Sentence-BERT đã có sẵn để nó hiểu tốt hơn về **domain CV-JD matching** của bạn.
-
-**📚 Ví dụ thực tế:**
-
-Sentence-BERT hiện tại:
-```
-"Python developer" vs "Software Engineer" → Score: 0.65
-"Python developer" vs "Python coder"      → Score: 0.70
+uvicorn.run(app, host="0.0.0.0", port=8003)
 ```
 
-Sau khi fine-tune với data của bạn:
-```
-"Python developer" vs "Software Engineer" → Score: 0.85 ✅ (hiểu rằng đây là cùng 1 nghề)
-"Python developer" vs "Python coder"      → Score: 0.90 ✅ (từ đồng nghĩa)
-```
+### ❌ CORS errors
 
----
-
-**🔧 Khi nào cần Fine-tuning?**
-
-✅ **CẦN** khi:
-1. Có **≥1000 CV-JD pairs** đã được người đánh giá (labeled)
-   - Ví dụ: CV_123 + JD_456 → Score: 8/10 (người đánh giá)
-2. Muốn accuracy tăng từ 90% → 95%+
-3. Có GPU mạnh (train 2-4 giờ)
-4. Domain rất đặc thù (ngành y tế, luật, tài chính...)
-
-❌ **KHÔNG CẦN** khi:
-1. Kết quả hiện tại đã đủ tốt (90%)
-2. Không có labeled data
-3. Đây là project học tập/nghiên cứu đơn giản
-4. **→ TRƯỜNG HỢP CỦA BẠN!** ✅
-
----
-
-**💡 Code mẫu (chỉ để tham khảo):**
-
+Server đã enable CORS mặc định. Nếu vẫn lỗi, check `app.py`:
 ```python
-from sentence_transformers import SentenceTransformer, InputExample, losses
-from torch.utils.data import DataLoader
-
-# Bước 1: Chuẩn bị labeled data
-# Cần có CV-JD pairs với scores từ chuyên gia
-train_examples = [
-    InputExample(texts=[cv_text_1, jd_text_1], label=0.85),  # Good match
-    InputExample(texts=[cv_text_2, jd_text_2], label=0.30),  # Poor match
-    InputExample(texts=[cv_text_3, jd_text_3], label=0.92),  # Excellent match
-    # ... ít nhất 1000 pairs
-]
-
-# Bước 2: Load model gốc
-model = SentenceTransformer('all-MiniLM-L6-v2')
-
-# Bước 3: Setup training
-train_dataloader = DataLoader(train_examples, shuffle=True, batch_size=16)
-train_loss = losses.CosineSimilarityLoss(model)
-
-# Bước 4: Fine-tune (train thêm)
-model.fit(
-    train_objectives=[(train_dataloader, train_loss)],
-    epochs=3,              # 3 lần học
-    warmup_steps=100,      # 100 steps khởi động
-    output_path='./fine-tuned-cv-matcher'
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
-
-# Bước 5: Dùng model mới
-# Thay 'all-MiniLM-L6-v2' → './fine-tuned-cv-matcher'
 ```
-
-**⏱️ Thời gian & Chi phí:**
-- Chuẩn bị labeled data: 1-2 tuần (người đánh giá thủ công)
-- Training: 2-4 giờ (cần GPU ~$0.50/giờ trên cloud)
-- Expected gain: +5-10% accuracy (90% → 95%+)
-
-**🎓 Kết luận cho project của bạn:**
-
-➡️ **KHÔNG cần fine-tune** vì:
-1. ✅ Đã đạt 90% accuracy (đủ tốt cho thesis)
-2. ✅ Không có labeled data (CV-JD scores từ chuyên gia)
-3. ✅ Sentence-BERT pre-trained đã rất tốt cho general similarity
-4. ✅ Project tập trung vào **pipeline design** hơn là training model
-
-➡️ **Fine-tuning** phù hợp cho:
-- Công ty có hàng ngàn CV-JD pairs với human ratings
-- Startup muốn competitive edge
-- Research paper về NLP/ML (không phải thesis về system design)
 
 ---
 
-## 📝 **CHECKLIST - SETUP PRODUCTION SYSTEM:**
+## 📊 System Requirements
 
-### **🚀 Bắt buộc (Required):**
+**Python Server:**
+- Python 3.8+
+- RAM: 2GB+ (khuyến nghị 4GB)
+- Disk: ~500MB (model + dependencies)
 
-- [ ] ✅ **Step 1:** Chạy Notebook 01 (extract 6 fields từ CVs)
-  - Output: `pdf_extracted_full_details.csv` (2,470 CVs)
-  - Thời gian: ~10 phút (chỉ lần đầu)
-
-- [ ] ✅ **Step 2:** Verify CSV file đã tạo thành công
-  ```python
-  df = pd.read_csv('pdf_extracted_full_details.csv')
-  print(len(df))  # Phải có 2470 rows
-  print(df.columns)  # 6 fields: Job_Title, Experience, Projects, Skills, Education, Certifications
-  ```
-
-- [ ] ✅ **Step 3:** Install required libraries
-  ```bash
-  pip install sentence-transformers scikit-learn
-  ```
-
-- [ ] ✅ **Step 4:** Chạy Notebook 03c (stable matching) - PRODUCTION VERSION
-  - Chạy toàn bộ cells theo thứ tự
-  - Step 0 (seed fixing) PHẢI chạy đầu tiên!
-  - Output: `cv_jd_matching_results_stable.csv`
-
-- [ ] ✅ **Step 5:** Verify kết quả
-  - Check accuracy: Top 5 CVs có đúng category không?
-  - Check reproducibility: Chạy lại → scores giống nhau?
-  - Check embedding cache: Lần 2 có nhanh hơn không?
-
-### **⚠️ Optional (Nâng cao):**
-
-- [ ] 📊 **Compare với version cũ** (03) để thấy improvement
-- [ ] 🔬 **Test với JD categories khác nhau** (Sales, Developer, Designer...)
-- [ ] 💾 **Backup embedding cache** (`embeddings_cache/` folder) để reuse
-- [ ] 📈 **Fine-tune model** (CHỈ khi có ≥1000 labeled CV-JD pairs)
+**Flutter App:**
+- Flutter 3.0+
+- Dart 2.17+
 
 ---
 
-## 💡 **TÓM TẮT:**
+## 🎯 Tổng kết
 
-### **🎯 Project Evolution:**
+✅ **Server:** FastAPI với Sentence-BERT AI model  
+✅ **Scoring:** 100% BERT semantic matching (pure deep learning)  
+✅ **Model:** Local storage - không cần internet  
+✅ **Tốc độ:** ~1-2s cho 10 CVs  
+✅ **CV Analysis:** Email, phone, education, experience, skills detection  
+✅ **Documentation:** Swagger UI tại http://localhost:8002/docs  
+✅ **Flutter:** Complete data models, API service, và UI example với field analysis  
 
-```
-Version 03 (Baseline)          Version 03c (Production)
-─────────────────────          ────────────────────────
-❌ 40% accuracy                 ✅ 90%+ accuracy
-❌ CHEF for Consultant          ✅ Correct categories
-❌ Scores 0.93-0.96             ✅ Scores 0.42-0.52
-❌ Random results               ✅ 100% reproducible
-❌ 3 min every run              ✅ 10 sec with cache
-❌ 2 fields extracted           ✅ 6 fields extracted
-❌ DistilBERT                   ✅ Sentence-BERT
-❌ No filtering                 ✅ Hybrid + Bonuses + Penalties
-```
-
-### **📦 Cải tiến chính trong 03c:**
-
-**Tier 1 - Stability:**
-1. 🎲 **Random seed fixing** → 100% reproducible (±0.001)
-2. 💾 **Embedding caching** → 18x faster (3 min → 10 sec)
-3. 🧹 **Enhanced text cleaning** → Consistent embeddings
-
-**Tier 2 - Quality:**
-4. 🔀 **Hybrid scoring** → 70% semantic + 30% lexical
-5. 🎯 **ESCO-based Dynamic Category Bonus** → +0.08 (high similarity >0.7), +0.05 (medium >0.5), 0.00 (low)
-   - Uses 3,039 ESCO occupations for semantic matching
-   - Replaces hard-coded keyword mapping (18 keywords → 3K+ occupations)
-   - Scalable & automatic
-6. 🚫 **Noise penalties** → -0.03 for irrelevant CVs
-
-### **📈 Kết quả đạt được:**
-
-| Metric | Before | After | Improvement |
-|--------|--------|-------|-------------|
-| **Accuracy** | 40% | 90% | +125% 🎯 |
-| **Reproducibility** | ±0.05 | ±0.001 | 50x better 🔒 |
-| **Speed (rerun)** | 3 min | 10 sec | 18x faster ⚡ |
-| **Score range** | 0.93-0.96 | 0.42-0.52 | Better separation 📊 |
-
-### **⏱️ Thời gian setup:**
-
-- **Lần đầu:**
-  - Extract CVs: ~10 phút (chỉ 1 lần)
-  - Install libs: ~1 phút
-  - Run matching: ~3 phút (compute + cache)
-  - **Total: ~15 phút**
-
-- **Lần sau:**
-  - Load CSV: 1 giây (có cache)
-  - Run matching: ~10 giây (load embeddings)
-  - **Total: ~15 giây** ⚡
-
----
-
-## 🚀 **QUICK START:**
-
-### **📋 3 bước đơn giản:**
-
-1️⃣ **Extract CVs** (Notebook 01)
+**Chạy server (BERT-only - Recommended):**
 ```bash
-# Mở: 01_pdf-data-extraction.ipynb
-# Run All Cells
-# Wait: ~10 minutes
-✅ Output: pdf_extracted_full_details.csv (2,470 CVs)
+python app_bert_only.py
 ```
+- Port: 8002
+- Model load từ: `./models/all-MiniLM-L6-v2/`
+- Features: CV field analysis, completeness checking, debug tools
 
-2️⃣ **Install Libraries**
+**Hoặc chạy Hybrid server (70% BERT + 30% TF-IDF):**
 ```bash
-pip install sentence-transformers scikit-learn
+python app.py
 ```
+- Port: 8000
+- Scoring: 70% semantic + 30% lexical
 
-3️⃣ **Run Matching** (Notebook 03c) ⭐
-```bash
-# Mở: 03c_stable-improved-cv-jd-matching.ipynb
-# Run All Cells (PHẢI chạy Step 0 trước!)
-# Wait: ~3 minutes first time, ~10 seconds after
-✅ Output: cv_jd_matching_results_stable.csv
-```
+**Test API:**
+- Swagger UI: http://localhost:8002/docs (BERT-only)
+- Swagger UI: http://localhost:8000/docs (Hybrid)
+- Health check: http://localhost:8002/ hoặc http://localhost:8000/
 
-### **✅ Verify Success:**
+**Tích hợp Flutter:** 
+1. Copy các file Dart ở Bước 2-4 vào project Flutter
+2. Update `baseUrl` thành `http://localhost:8002` (hoặc IP máy bạn)
+3. Test với Swagger UI trước khi tích hợp
 
-```python
-# Check kết quả
-df = pd.read_csv('cv_jd_matching_results_stable.csv')
-print(df.head(10))
-
-# Example good result:
-# JD: "Sales Specialist" 
-# → Top 5: CONSULTANT, BUSINESS-DEVELOPMENT, SALES ✅✅✅
-```
-
----
-
-## 📚 **FILES STRUCTURE:**
-
-```
-📁 Project Root/
-├── 📓 01_pdf-data-extraction.ipynb          [Extract 6 fields]
-├── 📓 02_basic-EDA.ipynb                    [Analysis only]
-├── 📓 03_cv-jd-matching.ipynb               [❌ Old - 40% accuracy]
-├── 📓 03c_stable-improved-cv-jd-matching.ipynb  [✅ PRODUCTION - 90% accuracy]
-├── 📄 pdf_extracted_full_details.csv        [2,470 CVs with 6 fields]
-├── 📄 cv_jd_matching_results_stable.csv     [Final results]
-├── 📁 embeddings_cache/                      [Speed up reruns]
-│   ├── jd_embeddings.npy
-│   └── cv_embeddings.npy
-└── 📁 data/                                  [Raw CV PDFs in 24 categories]
-```
-
----
-
-## 🎓 **KẾT LUẬN:**
-
-✅ **Version 03c là production-ready!**
-- 90%+ accuracy
-- 100% reproducible  
-- 18x faster với caching
-- Hybrid scoring (semantic + lexical)
-- Smart bonuses & penalties
-
-✅ **Không cần fine-tuning** vì:
-- Kết quả đã đủ tốt cho thesis
-- Sentence-BERT pre-trained rất mạnh
-- Không có labeled data (CV-JD ratings)
-
-✅ **Ready for submission!**
-
-**Good luck with your thesis! 🎉📚**
+**Lưu ý:**
+- ✅ Model đã được tải sẵn trong `./models/all-MiniLM-L6-v2/`
+- ✅ Server tự động load model từ local (không cần internet)
+- ✅ ESCO embeddings được cache trong `esco_embeddings.npy`
+- ✅ CV field analysis hoạt động với raw text (detect email, phone, dates chính xác)
