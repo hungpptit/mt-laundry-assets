@@ -34,9 +34,9 @@ Môi trường thực nghiệm đóng vai trò quan trọng trong việc đảm 
 |Tên dataset|UBIPR2|
 |Nguồn|University of Beira Interior (Portugal)|
 |Tổng số ảnh gốc|**~5000 images** (UBIPR2 dataset)|
-|Ảnh sau preprocessing|**3855 images** (đã crop eyebrows + apply mask)|
-|Ảnh training|**3276 images (85%)** ✓ Xác minh từ notebook|
-|Ảnh validation|**579 images (15%)** ✓ Xác minh từ notebook|
+|Ảnh sau preprocessing|**3855 images** (đã crop eyebrows + apply mask) ✅ ✅|
+|Ảnh training|**3276 images (85%)** ✅ ✅ Xác minh từ notebook output|
+|Ảnh validation|**579 images (15%)** ✅ ✅ Xác minh từ notebook output|
 |Kích thước ảnh|128×128 pixels|
 |Số kênh màu|3 channels (RGB)|
 |Loại ảnh|Near-infrared iris images|
@@ -48,7 +48,7 @@ Môi trường thực nghiệm đóng vai trò quan trọng trong việc đảm 
 | :-: | :-: |
 |KIẾN TRÚC MÔ HÌNH||
 |Loại mô hình|Convolutional AutoEncoder|
-|Tổng số parameters|**777,987 (~0.78M)** ✓ Đã xác minh từ notebook output|
+|Tổng số parameters|**777,987 (~0.78M)** ✅ ✅ Xác minh từ notebook: "✅ Model: 0.78M params"|
 |Encoder channels|3 → 32 → 64 → 128 → 256|
 |Decoder channels|256 → 128 → 64 → 32 → 3|
 |Latent space|256×8×8 feature maps|
@@ -102,15 +102,15 @@ Biểu đồ loss curve cho thấy giá trị hàm mất mát giảm nhanh ở c
 
 Kết quả MSE trên ảnh REAL (validation) cho thấy lỗi tái tạo nhỏ và phân bố tương đối tập trung.
 
-**Bảng 3.6 Thống kê Reconstruction Error (MSE) trên Validation (REAL)**
+**Bảng 3.6 Thống kê Reconstruction Error (MSE) trên Validation (REAL)** ✅ ✅
 
 |**Chỉ số**|**Giá trị**|
 | :-: | :-: |
-|Mean MSE|0\.000154|
-|Std MSE|0\.000079|
-|Median MSE|0\.000145|
-|Min MSE|0\.000003|
-|Max MSE|0\.000600|
+|Mean MSE|0\.000154 ✅ ✅|
+|Std MSE|0\.000079 ✅ ✅|
+|Median MSE|0\.000145 ✅ ✅|
+|Min MSE|0\.000003 ✅ ✅|
+|Max MSE|0\.000600 ✅ ✅|
 |25th Percentile|0\.000097|
 |75th Percentile|0\.000202|
 |95th Percentile|0\.000298|
@@ -140,12 +140,12 @@ Sự khác biệt giữa các trường hợp tái tạo tốt và kém cho th�
 
 Ngưỡng được tính theo công thức thống kê trên tập REAL:
 
-**Bảng 3.7 Thiết lập ngưỡng phát hiện**
+**Bảng 3.7 Thiết lập ngưỡng phát hiện** ✅ ✅
 
 |**Nội dung**|**Giá trị**|
 | :-: | :-: |
 |Threshold formula|Mean + 2×Std|
-|Calculated threshold|0\.000312|
+|Calculated threshold|0\.000312 ✅ ✅ (từ notebook: "Threshold = Mean + 2*Std = 0.0003")|
 |Quy tắc phân loại|MSE < 0.000312 → REAL / MSE ≥ 0.000312 → FAKE|
 
 Ghi chú: theo giả định "2-sigma", tỷ lệ báo động giả kỳ vọng khoảng ~5% (tham khảo theo phân bố chuẩn), tuy nhiên hiệu quả thực tế còn phụ thuộc dữ liệu và pipeline tiền xử lý.
@@ -242,8 +242,8 @@ Trong nghiên cứu này, ROC và AUC được sử dụng như công cụ phân
 Hệ thống được triển khai và kiểm tra trong môi trường real-time với webcam (implementation trong `main_realtime_new.py`). Kiến trúc gọn nhẹ (0.78M parameters) cho phép inference nhanh:
 
 **Hiệu năng inference:**
-- Mean Latency: **2.84 ms** (đo trên GPU Tesla T4)
-- Throughput: **352.2 FPS** (frames per second)
+- Mean Latency: **2.84 ms** ✅ ✅ (đo trên GPU Tesla T4, từ notebook output)
+- Throughput: **352.2 FPS** ✅ ✅ (frames per second, từ notebook output)
 - Latency range: 10-50ms (bao gồm preprocessing + detection + visualization)
 - Real-time FPS: 20-100 FPS tùy hardware (CPU: ~20-30 FPS, GPU: 80-100 FPS)
 
@@ -292,8 +292,8 @@ Kết quả cho thấy với kiến trúc gọn nhẹ (0.78M parameters), mô h�
 |Recall|0\.00|
 |F1-score|0\.00|
 |AUC-ROC|1\.00|
-|Mean Latency|2\.84 ms|
-|Throughput|352\.2 FPS|
+|Mean Latency|2\.84 ms ✅ ✅|
+|Throughput|352\.2 FPS ✅ ✅|
 
 **3.4. So sánh với các phương pháp liên quan** ✅
 
@@ -475,7 +475,7 @@ Tổng hợp các phân tích cho thấy phương pháp phát hiện liveness m�
 
 ---
 
-# KẾT LUẬN VÀ HƯỚNG PHÁT TRIỂN ✅
+# KẾT LUẬN VÀ HƯỚNG PHÁT TRIỂN 
 
 ## 1. Tóm tắt kết quả đạt được
 
