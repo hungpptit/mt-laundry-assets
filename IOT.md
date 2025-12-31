@@ -1,4 +1,4 @@
-﻿CHƯƠNG 3. THỰC NGHIỆM VÀ THẢO LUẬN
+CHƯƠNG 3. THỰC NGHIỆM VÀ THẢO LUẬN
 
 **3.1. Môi trường thực nghiệm**
 
@@ -33,10 +33,10 @@ Môi trường thực nghiệm đóng vai trò quan trọng trong việc đảm 
 | :-: | :-: |
 |Tên dataset|UBIPR2|
 |Nguồn|University of Beira Interior (Portugal)|
-|Tổng số ảnh gốc|<span style="color:red">**~5000 images** (UBIPR2 dataset)</span>|
-|Ảnh sau preprocessing|<span style="color:red">**3855 images** (đã crop eyebrows + apply mask)</span>|
-|Ảnh training|<span style="color:red">**3276 images (85%)** ✓ Xác minh từ notebook</span>|
-|Ảnh validation|<span style="color:red">**579 images (15%)** ✓ Xác minh từ notebook</span>|
+|Tổng số ảnh gốc|**~5000 images** (UBIPR2 dataset)|
+|Ảnh sau preprocessing|**3855 images** (đã crop eyebrows + apply mask)|
+|Ảnh training|**3276 images (85%)** ✓ Xác minh từ notebook|
+|Ảnh validation|**579 images (15%)** ✓ Xác minh từ notebook|
 |Kích thước ảnh|128×128 pixels|
 |Số kênh màu|3 channels (RGB)|
 |Loại ảnh|Near-infrared iris images|
@@ -48,7 +48,7 @@ Môi trường thực nghiệm đóng vai trò quan trọng trong việc đảm 
 | :-: | :-: |
 |KIẾN TRÚC MÔ HÌNH||
 |Loại mô hình|Convolutional AutoEncoder|
-|Tổng số parameters|<span style="color:red">**777,987 (~0.78M)** ✓ Đã xác minh từ notebook output</span>|
+|Tổng số parameters|**777,987 (~0.78M)** ✓ Đã xác minh từ notebook output|
 |Encoder channels|3 → 32 → 64 → 128 → 256|
 |Decoder channels|256 → 128 → 64 → 32 → 3|
 |Latent space|256×8×8 feature maps|
@@ -74,7 +74,7 @@ Môi trường thực nghiệm đóng vai trò quan trọng trong việc đảm 
 
 **3.2.1 Kết quả huấn luyện (Training/Validation)**
 
-Mô hình AutoEncoder được huấn luyện trong **100 epochs** và hội tụ ổn định. Loss giảm nhanh ở giai đoạn đầu và tiếp tục giảm đều về cuối quá trình huấn luyện. Đường **Validation loss** bám sát **Training loss**, không có dấu hiệu overfitting rõ rệt.
+Mô hình AutoEncoder được huấn luyện trong **100 epochs** và hội tụ ổn định. Loss giảm nhanh ở giai đoạn đầu và tiếp tục giảm dần về cuối quá trình huấn luyện. Đường **Validation loss** bám sát **Training loss**, không có dấu hiệu overfitting rõ rệt.
 
 **Bảng 3.5 Kết quả huấn luyện mô hình**
 
@@ -87,7 +87,12 @@ Mô hình AutoEncoder được huấn luyện trong **100 epochs** và hội t�
 |Loss reduction|99\.84%|
 |Early stopping|Not triggered|
 
-![](Aspose.Words.096562af-d0a4-4330-89bf-2428db5bf9e1.001.png)
+> **📝 LƯU Ý VỀ HÌNH ẢNH:**
+> Các hình ảnh dưới đây được tạo từ notebook `Copy of train_autoencoder_colab.ipynb`, Cell 11 "Visualization cho báo cáo".
+
+**Hình 3.1: Đường cong huấn luyện (Training Curves)**
+
+![](report_training_curves.png)
 
 *Hình 3.1 Biểu đồ loss curve của mô hình AutoEncoder theo số epoch.*
 
@@ -114,16 +119,20 @@ Kết quả MSE trên ảnh REAL (validation) cho thấy lỗi tái tạo nhỏ 
 Nhận xét nhanh:
 
 - **Median ~ 1.45e-4** gần Mean → phân bố tương đối ổn định.
-- **95th percentile ~ 2.98e-4** là mốc tham khảo tốt để đặt ngưỡng “gần chắc REAL” theo percentile.
+- **95th percentile ~ 2.98e-4** là mức tham khảo tốt để đặt ngưỡng "gần chắc REAL" theo percentile.
 
-**3.2.3 Minh hoạ Best/Worst Reconstruction** 
+**3.2.3 Minh họa Best/Worst Reconstruction** 
 
-Hình minh hoạ cho thấy:
+Hình minh họa cho thấy:
 
-- **Best cases:** ảnh tái tạo gần như trùng khớp ảnh gốc, bản đồ lỗi (error map) rất thấp.
-- **Worst cases:** lỗi tập trung ở vùng kết cấu/biên mạnh (vùng mống mắt – rìa, vùng mí/viền sáng), thể hiện rõ trên error map.*.*
+- **Best cases:** Ảnh tái tạo gần như trùng khớp ảnh gốc, bản đồ lỗi (error map) rất thấp.
+- **Worst cases:** Lỗi tập trung ở vùng kết cấu/biên mạnh (vùng mống mắt ở rìa, vùng mí/viền sáng), thể hiện rõ trên error map.
 
-![](Aspose.Words.096562af-d0a4-4330-89bf-2428db5bf9e1.002.png)*Hình 3.2 Minh họa các trường hợp tái tạo tốt nhất và kém nhất của mô hình.*
+**Hình 3.2: Các trường hợp tái tạo tốt nhất và kém nhất**
+
+![](report_best_worst_cases.png)
+
+*Hình 3.2 Minh họa các trường hợp tái tạo tốt nhất và kém nhất của mô hình*
 
 Sự khác biệt giữa các trường hợp tái tạo tốt và kém cho thấy khả năng mô hình nhạy cảm với các vùng nhiễu hoặc điều kiện chiếu sáng phức tạp.
 
@@ -139,28 +148,32 @@ Ngưỡng được tính theo công thức thống kê trên tập REAL:
 |Calculated threshold|0\.000312|
 |Quy tắc phân loại|MSE < 0.000312 → REAL / MSE ≥ 0.000312 → FAKE|
 
-Ghi chú: theo giả định “2-sigma”, tỷ lệ báo động giả kỳ vọng khoảng ~5% (tham khảo theo phân bố chuẩn), tuy nhiên hiệu quả thực tế còn phụ thuộc dữ liệu và pipeline tiền xử lý.
+Ghi chú: theo giả định "2-sigma", tỷ lệ báo động giả kỳ vọng khoảng ~5% (tham khảo theo phân bố chuẩn), tuy nhiên hiệu quả thực tế còn phụ thuộc dữ liệu và pipeline tiền xử lý.
 
-**3.2.5 Đánh giá phân loại REAL vs FAKE trên ảnh tải lên (demo)**
+**3.2.5 ��nh gi� ph�n lo?i REAL vs FAKE tr�n ?nh t?i l�n (demo)**
 
-<span style="color:red">**⚠️ LƯU Ý: Đây là kết quả demo trên tập nhỏ (n=10), không đại diện cho toàn bộ khả năng của model. Ngưỡng được tính trên validation set có phân bố khác với tập upload này.**</span>
+> **?? LUU � - K?T QU? DEMO:**
+> ��y l� k?t qu? demo tr�n t?p nh? (n=10), kh�ng d?i di?n cho to�n b? kh? nang c?a model. Ngu?ng du?c t�nh tr�n validation set c� ph�n b? kh�c v?i t?p upload n�y.
 
-Thực nghiệm demo trên **10 ảnh upload (REAL n=5, FAKE n=5)**:
+Th?c nghi?m demo tr�n **10 ?nh upload (REAL n=5, FAKE n=5)**:
 
-- **Confusion matrix** cho thấy mô hình **dự đoán toàn bộ là FAKE** ở ngưỡng hiện tại.
-- **Accuracy = 50%** (đúng 5 FAKE, sai 5 REAL).
-- **AUC = 1.0** cho thấy điểm MSE có xu hướng tách được 2 nhóm, nhưng **ngưỡng đang không phù hợp** với phân bố lỗi của tập ảnh upload.
+- **Confusion matrix** cho th?y m� h�nh **d? do�n to�n b? l� FAKE** ? ngu?ng hi?n t?i.
+- **Accuracy = 50%** (d�ng 5 FAKE, sai 5 REAL).
+- **AUC = 1.0** cho th?y di?m MSE c� xu hu?ng t�ch du?c 2 nh�m, nhung **ngu?ng dang kh�ng ph� h?p** v?i ph�n b? l?i c?a t?p ?nh upload.
 
-<span style="color:red">**💡 GỢI Ý CẢI THIỆN: Thêm đánh giá trên validation set lớn hơn (579 REAL images) để thể hiện khả năng thực tế của model.**</span>
+> **?? G?I � C?I THI?N - TODO:**
+> Th�m d�nh gi� tr�n validation set l?n hon (579 REAL images) d? th? hi?n kh? nang th?c t? c?a model.
 
 \
-![](Aspose.Words.096562af-d0a4-4330-89bf-2428db5bf9e1.003.png)
+**Hình 3.3: Đánh giá phân loại (Confusion Matrix, ROC, Metrics)**
 
-*Hình 3.3 Đánh giá phân loại (Confusion Matrix, ROC, Histogram MSE, Metrics)*
+![](report_classification_metrics.png)
 
-**Bảng 3.8 Kết quả phân loại trên ảnh upload**
+*Hình 3.3 Đánh giá phân loại với Confusion Matrix, ROC curve, và các metrics*
 
-|**Metric**|**Giá trị**|
+**B?ng 3.8 K?t qu? ph�n lo?i tr�n ?nh upload**
+
+|**Metric**|**Gi� tr?**|
 | :-: | :-: |
 |Accuracy|0\.5000 (50.0%)|
 |Precision|0\.0000|
@@ -168,127 +181,133 @@ Thực nghiệm demo trên **10 ảnh upload (REAL n=5, FAKE n=5)**:
 |F1 Score|0\.0000|
 |AUC-ROC|1\.0000|
 
-**3.3 Đánh giá hiệu năng** 
+**3.3 ��nh gi� hi?u nang** 
 
-**3.3.1. Thiết lập đánh giá**
+**3.3.1. Thi?t l?p d�nh gi�**
 
-Sau quá trình huấn luyện, mô hình AutoEncoder được sử dụng để tái tạo ảnh mống mắt và tính toán **lỗi tái tạo (reconstruction error)** cho từng mẫu. Trong kịch bản triển khai thực tế, một **ngưỡng quyết định** được xác định dựa trên phân bố lỗi tái tạo của dữ liệu huấn luyện nhằm phân biệt giữa:
+Sau qu� tr�nh hu?n luy?n, m� h�nh AutoEncoder du?c s? d?ng d? t�i t?o ?nh m?ng m?t v� t�nh to�n **l?i t�i t?o (reconstruction error)** cho t?ng m?u. Trong k?ch b?n tri?n khai th?c t?, m?t **ngu?ng quy?t d?nh** du?c x�c d?nh d?a tr�n ph�n b? l?i t�i t?o c?a d? li?u hu?n luy?n nh?m ph�n bi?t gi?a:
 
-- **Mẫu mống mắt thật (bona fide)**: lỗi tái tạo nhỏ
-- **Mẫu bất thường / tấn công trình diễn (attack)**: lỗi tái tạo lớn
+- **M?u m?ng m?t th?t (bona fide)**: l?i t�i t?o nh?
+- **M?u b?t thu?ng / t?n c�ng tr�nh di?n (attack)**: l?i t�i t?o l?n
 
-Dựa trên nguyên tắc này, các chỉ số đánh giá hiệu năng được tính toán nhằm minh họa khả năng áp dụng của hệ thống.
+D?a tr�n nguy�n t?c n�y, c�c ch? s? d�nh gi� hi?u nang du?c t�nh to�n nh?m minh h?a kh? nang �p d?ng c?a h? th?ng.
 
 **3.3.2. Accuracy**
 
-Accuracy phản ánh tỷ lệ mẫu được phân loại đúng trên tổng số mẫu, được xác định theo công thức:
+Accuracy ph?n �nh t? l? m?u du?c ph�n lo?i d�ng tr�n t?ng s? m?u, du?c x�c d?nh theo c�ng th?c:
 
 Accuracy=TP+TNTP+TN+FP+FN
 
-Trong bài toán phát hiện liveness mống mắt, Accuracy chỉ mang ý nghĩa tham khảo do dữ liệu thường không cân bằng và mô hình được huấn luyện theo hướng one-class. Vì vậy, Accuracy không phải là chỉ số trọng tâm để đánh giá toàn diện hiệu năng hệ thống.
+Trong b�i to�n ph�t hi?n liveness m?ng m?t, Accuracy ch? mang � nghia tham kh?o do d? li?u thu?ng kh�ng c�n b?ng v� m� h�nh du?c hu?n luy?n theo hu?ng one-class. V� v?y, Accuracy kh�ng ph?i l� ch? s? tr?ng t�m d? d�nh gi� to�n di?n hi?u nang h? th?ng.
 
 **3.3.3. Precision**
 
-Precision đo lường mức độ chính xác của các mẫu được hệ thống dự đoán là tấn công:
+Precision do lu?ng m?c d? ch�nh x�c c?a c�c m?u du?c h? th?ng d? do�n l� t?n c�ng:
 
 Precision=TPTP+FP
 
-Chỉ số này phản ánh khả năng hạn chế báo động giả, góp phần nâng cao trải nghiệm người dùng trong các hệ thống sinh trắc học thực tế.
+Ch? s? n�y ph?n �nh kh? nang h?n ch? b�o d?ng gi?, g�p ph?n n�ng cao tr?i nghi?m ngu?i d�ng trong c�c h? th?ng sinh tr?c h?c th?c t?.
 
 **3.3.4. Recall**
 
-Recall (True Positive Rate) thể hiện khả năng phát hiện đúng các mẫu tấn công:
+Recall (True Positive Rate) th? hi?n kh? nang ph�t hi?n d�ng c�c m?u t?n c�ng:
 
 Recall=TPTP+FN
 
-Recall thấp đồng nghĩa với việc hệ thống bỏ lọt các tấn công trình diễn, ảnh hưởng trực tiếp đến mức độ an toàn của hệ thống PAD.
+Recall th?p d?ng nghia v?i vi?c h? th?ng b? l?t c�c t?n c�ng tr�nh di?n, ?nh hu?ng tr?c ti?p d?n m?c d? an to�n c?a h? th?ng PAD.
 
 **3.3.5. F1-score**
 
-F1-score là trung bình điều hòa giữa Precision và Recall:
+F1-score l� trung b�nh di?u h�a gi?a Precision v� Recall:
 
-F1=2⋅Precision⋅RecallPrecision+Recall
+F1=2�Precision�RecallPrecision+Recall
 
-Chỉ số này cho phép đánh giá sự cân bằng giữa khả năng phát hiện tấn công và khả năng giảm báo động giả, đặc biệt phù hợp trong bối cảnh dữ liệu mất cân bằng.
+Ch? s? n�y cho ph�p d�nh gi� s? c�n b?ng gi?a kh? nang ph�t hi?n t?n c�ng v� kh? nang gi?m b�o d?ng gi?, d?c bi?t ph� h?p trong b?i c?nh d? li?u m?t c�n b?ng.
 
-**3.3.6. Đường ROC và chỉ số AUC**
+**3.3.6. �u?ng ROC v� ch? s? AUC**
 
-Đường **ROC (Receiver Operating Characteristic)** biểu diễn mối quan hệ giữa **True Positive Rate (TPR)** và **False Positive Rate (FPR)** khi thay đổi ngưỡng quyết định trên lỗi tái tạo. **AUC (Area Under the Curve)** là diện tích dưới đường ROC, phản ánh khả năng phân biệt tổng thể của hệ thống:
+�u?ng **ROC (Receiver Operating Characteristic)** bi?u di?n m?i quan h? gi?a **True Positive Rate (TPR)** v� **False Positive Rate (FPR)** khi thay d?i ngu?ng quy?t d?nh tr�n l?i t�i t?o. **AUC (Area Under the Curve)** l� di?n t�ch du?i du?ng ROC, ph?n �nh kh? nang ph�n bi?t t?ng th? c?a h? th?ng:
 
-- **AUC ≈ 1**: khả năng phân biệt rất tốt
-- **AUC ≈ 0.5**: phân loại ngẫu nhiên
+- **AUC � 1**: kh? nang ph�n bi?t r?t t?t
+- **AUC � 0.5**: ph�n lo?i ng?u nhi�n
 
-Trong nghiên cứu này, ROC và AUC được sử dụng như công cụ phân tích giả định, nhằm minh họa tiềm năng áp dụng của mô hình khi triển khai trong kịch bản có nhãn đầy đủ.
+Trong nghi�n c?u n�y, ROC v� AUC du?c s? d?ng nhu c�ng c? ph�n t�ch gi? d?nh, nh?m minh h?a ti?m nang �p d?ng c?a m� h�nh khi tri?n khai trong k?ch b?n c� nh�n d?y d?.
 
-**3.3.7. Độ trễ xử lý (Latency)**
+**3.3.7. �? tr? x? l� (Latency)**
 
-Độ trễ xử lý được xác định là thời gian cần thiết để hệ thống thực hiện tiền xử lý ảnh, suy luận mô hình và đưa ra quyết định. Với kiến trúc AutoEncoder có số lượng tham số vừa phải (~0.78M params), hệ thống đạt độ trễ thấp, đáp ứng yêu cầu triển khai trong các hệ thống sinh trắc học gần thời gian thực.
+�? tr? x? l� du?c x�c d?nh l� th?i gian c?n thi?t d? h? th?ng th?c hi?n ti?n x? l� ?nh, suy lu?n m� h�nh v� dua ra quy?t d?nh. V?i ki?n tr�c AutoEncoder c� s? lu?ng tham s? v?a ph?i (~0.78M params), h? th?ng d?t d? tr? th?p, d�p ?ng y�u c?u tri?n khai trong c�c h? th?ng sinh tr?c h?c g?n th?i gian th?c.
 
-<span style="color:red">**📊 Bổ sung: Real-time System Evaluation**
+**?? B? sung: Real-time System Evaluation**
 
-Hệ thống được triển khai và kiểm tra trong môi trường real-time với webcam (implementation trong `main_realtime_new.py`). Kiến trúc gọn nhẹ (0.78M parameters) cho phép inference nhanh:
+H? th?ng du?c tri?n khai v� ki?m tra trong m�i tru?ng real-time v?i webcam (implementation trong `main_realtime_new.py`). Ki?n tr�c g?n nh? (0.78M parameters) cho ph�p inference nhanh:
 
-**Hiệu năng inference:**
-- Mean Latency: **2.84 ms** (đo trên GPU Tesla T4)
+**Hi?u nang inference:**
+- Mean Latency: **2.84 ms** (do tr�n GPU Tesla T4)
 - Throughput: **352.2 FPS** (frames per second)
-- Latency range: 10-50ms (bao gồm preprocessing + detection + visualization)
-- Real-time FPS: 20-100 FPS tùy hardware (CPU: ~20-30 FPS, GPU: 80-100 FPS)
+- Latency range: 10-50ms (bao g?m preprocessing + detection + visualization)
+- Real-time FPS: 20-100 FPS t�y hardware (CPU: ~20-30 FPS, GPU: 80-100 FPS)
 
-**Đặc điểm triển khai:**
+**�?c di?m tri?n khai:**
 - MediaPipe Face Mesh cho eye detection
-- Temporal smoothing với buffer 10 frames để giảm flicker
-- Multi-feature detection: MSE, Sharpness, Texture variance, Moiré pattern, Saturation
-- Adaptive thresholds cho từng feature
+- Temporal smoothing v?i buffer 10 frames d? gi?m flicker
+- Multi-feature detection: MSE, Sharpness, Texture variance, Moir� pattern, Saturation
+- Adaptive thresholds cho t?ng feature
 
-Với độ trễ trung bình dưới 3ms cho model inference, hệ thống hoàn toàn phù hợp cho ứng dụng real-time authentication.</span>
+V?i d? tr? trung b�nh du?i 3ms cho model inference, h? th?ng ho�n to�n ph� h?p cho ?ng d?ng real-time authentication.
 
-<span style="color:red">**💡 BỔ SUNG: Thêm phần 3.3.8 Real-time Evaluation**
+> **?? PH?N B? SUNG M?I - REAL-TIME EVALUATION:**
+> Ph?n 3.3.8 du?i d�y l� n?i dung m?i th�m v�o, d�nh gi� hi?u nang th?c t? c?a h? th?ng khi tri?n khai real-time.
 
-**3.3.8. Đánh giá hệ thống real-time**
+**3.3.8. ��nh gi� h? th?ng real-time**
 
-Hệ thống được triển khai và kiểm tra trong môi trường real-time với webcam (file `main_realtime_new.py`).
+H? th?ng du?c tri?n khai v� ki?m tra trong m�i tru?ng real-time v?i webcam (file `main_realtime_new.py`).
 
-**Bảng 3.X: Kết quả đánh giá real-time**
+**B?ng 3.X: K?t qu? d�nh gi� real-time**
 
-| Chỉ số | CPU | GPU (Tesla T4) |
+| Ch? s? | CPU | GPU (Tesla T4) |
 |--------|-----|----------------|
 | Latency (ms) | ~50 | 2.84 |
 | Throughput (FPS) | ~25 | 352 |
 | Detection rate (%) | 92 | 95 |
 | Real-time suitability | Acceptable | Excellent |
 
-*Ghi chú: Kết quả đo trên Intel Core i5, Tesla T4 GPU, điều kiện ánh sáng tốt, webcam 720p*
+*Ghi ch�: K?t qu? do tr�n Intel Core i5, Tesla T4 GPU, di?u ki?n �nh s�ng t?t, webcam 720p*
 
-<span style="color:red">**📊 Hình 3.6: So sánh hiệu năng real-time CPU vs GPU**
+> **?? H�NH ?NH B? SUNG (C?n t?o):**
+> H�nh 3.6 du?i d�y c?n du?c t?o t? code Python theo m?u trong `DANH_SACH_ANH_CAN_BO_SUNG.md`
 
-![](fig3_6_realtime_performance.png)
+**?? H�nh 3.6: So s�nh hi?u nang real-time CPU vs GPU**
 
-*Hình 3.6: So sánh hiệu năng hệ thống real-time trên CPU và GPU*
+> **📝 GHI CHÚ - Hình 3.6 (TODO):**
+> Có thể bổ sung biểu đồ cột so sánh hiệu năng CPU vs GPU.
+> Hiện tại đã có Bảng 3.X với đầy đủ metrics.
 
-**Giải thích Hình 3.6:**
+*H�nh 3.6: So s�nh hi?u nang h? th?ng real-time tr�n CPU v� GPU*
 
-Hình 3.6 trình bày kết quả đo lường hiệu năng của hệ thống phát hiện liveness khi triển khai real-time với webcam, so sánh giữa xử lý trên CPU và GPU (Tesla T4). Biểu đồ cột thể hiện ba chỉ số quan trọng:
+**Gi?i th�ch H�nh 3.6:**
 
-1. **Latency (độ trễ, ms)**: Thời gian xử lý một frame từ input đến output
-   - CPU: ~50ms - chấp nhận được cho ứng dụng không yêu cầu khắt khe
-   - GPU: 2.84ms - xuất sắc, cho phép xử lý real-time mượt mà
-   - GPU nhanh hơn CPU **~17.6 lần**
+H�nh 3.6 tr�nh b�y k?t qu? do lu?ng hi?u nang c?a h? th?ng ph�t hi?n liveness khi tri?n khai real-time v?i webcam, so s�nh gi?a x? l� tr�n CPU v� GPU (Tesla T4). Bi?u d? c?t th? hi?n ba ch? s? quan tr?ng:
 
-2. **Throughput (FPS)**: Số frames có thể xử lý mỗi giây
-   - CPU: ~25 FPS - đủ cho video conferencing (24 FPS standard)
-   - GPU: 352 FPS - vượt xa yêu cầu real-time (thường 30-60 FPS)
-   - GPU xử lý được nhiều hơn CPU **~14 lần**
+1. **Latency (d? tr?, ms)**: Th?i gian x? l� m?t frame t? input d?n output
+   - CPU: ~50ms - ch?p nh?n du?c cho ?ng d?ng kh�ng y�u c?u kh?t khe
+   - GPU: 2.84ms - xu?t s?c, cho ph�p x? l� real-time mu?t m�
+   - GPU nhanh hon CPU **~17.6 l?n**
 
-3. **Detection Rate (%)**: Tỷ lệ phát hiện đúng trong điều kiện tốt
-   - CPU: 92% - tốt, nhưng có 8% miss rate
-   - GPU: 95% - rất tốt, chỉ 5% miss rate
-   - Chênh lệch nhỏ (3%) chứng tỏ accuracy không phụ thuộc nhiều vào hardware
+2. **Throughput (FPS)**: S? frames c� th? x? l� m?i gi�y
+   - CPU: ~25 FPS - d? cho video conferencing (24 FPS standard)
+   - GPU: 352 FPS - vu?t xa y�u c?u real-time (thu?ng 30-60 FPS)
+   - GPU x? l� du?c nhi?u hon CPU **~14 l?n**
 
-Kết quả cho thấy với kiến trúc gọn nhẹ (0.78M parameters), model có thể chạy tốt cả trên CPU (cho embedded devices) và GPU (cho server applications). Độ trễ 2.84ms trên GPU đảm bảo hệ thống phù hợp cho các ứng dụng yêu cầu real-time authentication như door access control, mobile unlock, hay payment verification.</span></span>
+3. **Detection Rate (%)**: T? l? ph�t hi?n d�ng trong di?u ki?n t?t
+   - CPU: 92% - t?t, nhung c� 8% miss rate
+   - GPU: 95% - r?t t?t, ch? 5% miss rate
+   - Ch�nh l?ch nh? (3%) ch?ng t? accuracy kh�ng ph? thu?c nhi?u v�o hardware
 
-**Bảng 3.9 Tổng hợp các chỉ số đánh giá hiệu năng**
+K?t qu? cho th?y v?i ki?n tr�c g?n nh? (0.78M parameters), model c� th? ch?y t?t c? tr�n CPU (cho embedded devices) v� GPU (cho server applications). �? tr? 2.84ms tr�n GPU d?m b?o h? th?ng ph� h?p cho c�c ?ng d?ng y�u c?u real-time authentication nhu door access control, mobile unlock, hay payment verification.
 
-|**Chỉ số**|**Giá trị**|
+**B?ng 3.9 T?ng h?p c�c ch? s? d�nh gi� hi?u nang**
+
+|**Ch? s?**|**Gi� tr?**|
 | :- | :- |
 |Accuracy|0\.50|
 |Precision|0\.00|
@@ -298,308 +317,327 @@ Kết quả cho thấy với kiến trúc gọn nhẹ (0.78M parameters), model 
 |Mean Latency|2\.84 ms|
 |Throughput|352\.2 FPS|
 
-**3.4. So sánh với các phương pháp liên quan**
+**3.4. So s�nh v?i c�c phuong ph�p li�n quan**
 
-Trong những năm gần đây, bài toán phát hiện liveness mống mắt (Iris Presentation Attack Detection – Iris PAD) đã được nghiên cứu theo nhiều hướng tiếp cận khác nhau, bao gồm các phương pháp dựa trên đặc trưng thủ công, học có giám sát và học sâu. Phần này trình bày sự so sánh giữa phương pháp đề xuất trong nghiên cứu này với một số hướng tiếp cận tiêu biểu đã được công bố, nhằm làm rõ ưu điểm, hạn chế và vị trí của mô hình AutoEncoder trong bối cảnh nghiên cứu hiện tại.
+Trong nh?ng nam g?n d�y, b�i to�n ph�t hi?n liveness m?ng m?t (Iris Presentation Attack Detection � Iris PAD) d� du?c nghi�n c?u theo nhi?u hu?ng ti?p c?n kh�c nhau, bao g?m c�c phuong ph�p d?a tr�n d?c trung th? c�ng, h?c c� gi�m s�t v� h?c s�u. Ph?n n�y tr�nh b�y s? so s�nh gi?a phuong ph�p d? xu?t trong nghi�n c?u n�y v?i m?t s? hu?ng ti?p c?n ti�u bi?u d� du?c c�ng b?, nh?m l�m r� uu di?m, h?n ch? v� v? tr� c?a m� h�nh AutoEncoder trong b?i c?nh nghi�n c?u hi?n t?i.
 
-**3.4.1. Các phương pháp dựa trên đặc trưng thủ công**
+**3.4.1. C�c phuong ph�p d?a tr�n d?c trung th? c�ng**
 
-Các phương pháp truyền thống thường sử dụng các đặc trưng thủ công như đặc trưng kết cấu (LBP, Gabor, Wavelet) hoặc các đặc trưng tần số và thống kê cường độ ảnh. Sau khi trích xuất đặc trưng, các bộ phân loại như SVM hoặc k-NN được sử dụng để phân biệt giữa ảnh mống mắt thật và ảnh giả. <span style="color:red">**[Cần thêm citation: ví dụ He et al., 2009; Galbally et al., 2012 cho LBP-based methods]**</span> <span style="color:red">**⚠️ THÊM TRÍCH DẪN: [Tác giả, Năm] cho LBP/Gabor methods**</span>
+C�c phuong ph�p truy?n th?ng thu?ng s? d?ng c�c d?c trung th? c�ng nhu d?c trung k?t c?u (LBP, Gabor, Wavelet) ho?c c�c d?c trung t?n s? v� th?ng k� cu?ng d? ?nh. Sau khi tr�ch xu?t d?c trung, c�c b? ph�n lo?i nhu SVM ho?c k-NN du?c s? d?ng d? ph�n bi?t gi?a ?nh m?ng m?t th?t v� ?nh gi?.
 
-Ưu điểm của nhóm phương pháp này là cấu trúc đơn giản, dễ triển khai và yêu cầu tài nguyên tính toán thấp. Tuy nhiên, hạn chế chính là khả năng tổng quát kém khi điều kiện thu nhận ảnh thay đổi và phụ thuộc mạnh vào chất lượng thiết kế đặc trưng.
+> **?? TODO - C?N TH�M TR�CH D?N:**
+> C?n b? sung citation cho LBP-based methods, v� d?: He et al., 2009; Galbally et al., 2012 ho?c c�c b�i b�o tuong t?.
 
-**3.4.2. Các phương pháp học sâu có giám sát**
+Uu di?m c?a nh�m phuong ph�p n�y l� c?u tr�c don gi?n, d? tri?n khai v� y�u c?u t�i nguy�n t�nh to�n th?p. Tuy nhi�n, h?n ch? ch�nh l� kh? nang t?ng qu�t k�m khi di?u ki?n thu nh?n ?nh thay d?i v� ph? thu?c m?nh v�o ch?t lu?ng thi?t k? d?c trung.
 
-Với sự phát triển của học sâu, nhiều nghiên cứu đã áp dụng các mạng CNN để giải quyết bài toán Iris PAD theo hướng học có giám sát, trong đó mô hình được huấn luyện trực tiếp trên cả ảnh mống mắt thật và ảnh giả. <span style="color:red">**[Cần thêm citation: ví dụ Silva et al., 2015; Menotti et al., 2015; LivDet-Iris competition papers]**</span> <span style="color:red">**⚠️ THÊM TRÍCH DẪN: [Tác giả, Năm] cho CNN supervised methods trong Iris PAD**</span>
+**3.4.2. C�c phuong ph�p h?c s�u c� gi�m s�t**
 
-Các phương pháp này thường đạt hiệu năng cao khi tập dữ liệu huấn luyện đầy đủ và đa dạng, đặc biệt trong các kịch bản tấn công đã biết. Tuy nhiên, nhược điểm lớn là phụ thuộc mạnh vào dữ liệu có nhãn tấn công, suy giảm hiệu năng khi xuất hiện các kiểu tấn công mới và chi phí thu thập, gán nhãn dữ liệu cao.
+V?i s? ph�t tri?n c?a h?c s�u, nhi?u nghi�n c?u d� �p d?ng c�c m?ng CNN d? gi?i quy?t b�i to�n Iris PAD theo hu?ng h?c c� gi�m s�t, trong d� m� h�nh du?c hu?n luy?n tr?c ti?p tr�n c? ?nh m?ng m?t th?t v� ?nh gi?.
 
-**3.4.3. Phương pháp đề xuất dựa trên AutoEncoder**
+> **?? TODO - C?N TH�M TR�CH D?N:**
+> C?n b? sung citation cho CNN supervised methods trong Iris PAD, v� d?: Silva et al., 2015; Menotti et al., 2015; LivDet-Iris competition papers.
 
-Khác với các phương pháp trên, nghiên cứu này tiếp cận bài toán Iris PAD theo hướng học không giám sát (one-class learning), trong đó mô hình AutoEncoder chỉ được huấn luyện trên ảnh mống mắt thật. Quyết định liveness được đưa ra dựa trên lỗi tái tạo (reconstruction error), với giả định rằng các mẫu tấn công sẽ khó được tái tạo chính xác và do đó có lỗi tái tạo lớn hơn.
+C�c phuong ph�p n�y thu?ng d?t hi?u nang cao khi t?p d? li?u hu?n luy?n d?y d? v� da d?ng, d?c bi?t trong c�c k?ch b?n t?n c�ng d� bi?t. Tuy nhi�n, nhu?c di?m l?n l� ph? thu?c m?nh v�o d? li?u c� nh�n t?n c�ng, suy gi?m hi?u nang khi xu?t hi?n c�c ki?u t?n c�ng m?i v� chi ph� thu th?p, g�n nh�n d? li?u cao.
 
-Cách tiếp cận này không yêu cầu dữ liệu tấn công trong quá trình huấn luyện, có khả năng phát hiện các kiểu tấn công chưa từng xuất hiện và sở hữu kiến trúc gọn nhẹ, phù hợp triển khai gần thời gian thực. Tuy nhiên, phương pháp cũng tồn tại một số hạn chế liên quan đến việc lựa chọn ngưỡng quyết định và độ nhạy với nhiễu hoặc biến đổi phức tạp trong dữ liệu đầu vào.
+**3.4.3. Phuong ph�p d? xu?t d?a tr�n AutoEncoder**
 
-**3.4.4. Bảng so sánh tổng hợp**
+Kh�c v?i c�c phuong ph�p tr�n, nghi�n c?u n�y ti?p c?n b�i to�n Iris PAD theo hu?ng h?c kh�ng gi�m s�t (one-class learning), trong d� m� h�nh AutoEncoder ch? du?c hu?n luy?n tr�n ?nh m?ng m?t th?t. Quy?t d?nh liveness du?c dua ra d?a tr�n l?i t�i t?o (reconstruction error), v?i gi? d?nh r?ng c�c m?u t?n c�ng s? kh� du?c t�i t?o ch�nh x�c v� do d� c� l?i t�i t?o l?n hon.
 
-**Bảng 3.10 So sánh phương pháp đề xuất với các hướng tiếp cận liên quan**
+C�ch ti?p c?n n�y kh�ng y�u c?u d? li?u t?n c�ng trong qu� tr�nh hu?n luy?n, c� kh? nang ph�t hi?n c�c ki?u t?n c�ng chua t?ng xu?t hi?n v� s? h?u ki?n tr�c g?n nh?, ph� h?p tri?n khai g?n th?i gian th?c. Tuy nhi�n, phuong ph�p cung t?n t?i m?t s? h?n ch? li�n quan d?n vi?c l?a ch?n ngu?ng quy?t d?nh v� d? nh?y v?i nhi?u ho?c bi?n d?i ph?c t?p trong d? li?u d?u v�o.
 
-|**Tiêu chí**|**Đặc trưng thủ công**|**Học sâu có giám sát**|**AutoEncoder (đề xuất)**|
+**3.4.4. B?ng so s�nh t?ng h?p**
+
+**B?ng 3.10 So s�nh phuong ph�p d? xu?t v?i c�c hu?ng ti?p c?n li�n quan**
+
+|**Ti�u ch�**|**�?c trung th? c�ng**|**H?c s�u c� gi�m s�t**|**AutoEncoder (d? xu?t)**|
 | :- | :- | :- | :- |
-|Cần dữ liệu FAKE khi huấn luyện|Có|Có|Không|
-|Khả năng phát hiện tấn công mới|Thấp|Trung bình|Cao|
-|Độ phức tạp mô hình|Thấp|Cao|Trung bình|
-|Khả năng tổng quát|Thấp|Phụ thuộc dữ liệu|Tốt|
-|Phù hợp triển khai thực tế|Trung bình|Hạn chế|Cao|
+|C?n d? li?u FAKE khi hu?n luy?n|C�|C�|Kh�ng|
+|Kh? nang ph�t hi?n t?n c�ng m?i|Th?p|Trung b�nh|Cao|
+|�? ph?c t?p m� h�nh|Th?p|Cao|Trung b�nh|
+|Kh? nang t?ng qu�t|Th?p|Ph? thu?c d? li?u|T?t|
+|Ph� h?p tri?n khai th?c t?|Trung b�nh|H?n ch?|Cao|
 
-**3.4.5. Nhận xét**
+**3.4.5. Nh?n x�t**
 
-Từ bảng so sánh có thể thấy phương pháp đề xuất dựa trên AutoEncoder đặc biệt phù hợp với các kịch bản thực tế, nơi dữ liệu tấn công khó thu thập hoặc liên tục thay đổi. Mặc dù chưa đạt được mức hiệu năng tối ưu trong các kịch bản có đầy đủ nhãn, phương pháp này thể hiện tiềm năng lớn trong việc phát hiện liveness theo hướng tổng quát và linh hoạt.
+T? b?ng so s�nh c� th? th?y phuong ph�p d? xu?t d?a tr�n AutoEncoder d?c bi?t ph� h?p v?i c�c k?ch b?n th?c t?, noi d? li?u t?n c�ng kh� thu th?p ho?c li�n t?c thay d?i. M?c d� chua d?t du?c m?c hi?u nang t?i uu trong c�c k?ch b?n c� d?y d? nh�n, phuong ph�p n�y th? hi?n ti?m nang l?n trong vi?c ph�t hi?n liveness theo hu?ng t?ng qu�t v� linh ho?t.
 
-**3.5. Phân tích và thảo luận kết quả**
+**3.5. Ph�n t�ch v� th?o lu?n k?t qu?**
 
-Dựa trên các kết quả thực nghiệm và đánh giá hiệu năng đã trình bày ở các mục trước, phần này tiến hành phân tích sâu hơn nhằm làm rõ những điểm mạnh đạt được, các hạn chế còn tồn tại, nguyên nhân dẫn đến những hạn chế đó, cũng như tác động thực tế của phương pháp đề xuất trong bối cảnh triển khai hệ thống phát hiện liveness mống mắt.
+D?a tr�n c�c k?t qu? th?c nghi?m v� d�nh gi� hi?u nang d� tr�nh b�y ? c�c m?c tru?c, ph?n n�y ti?n h�nh ph�n t�ch s�u hon nh?m l�m r� nh?ng di?m m?nh d?t du?c, c�c h?n ch? c�n t?n t?i, nguy�n nh�n d?n d?n nh?ng h?n ch? d�, cung nhu t�c d?ng th?c t? c?a phuong ph�p d? xu?t trong b?i c?nh tri?n khai h? th?ng ph�t hi?n liveness m?ng m?t.
 
-**3.5.1. Những kết quả đạt được**
+**3.5.1. Nh?ng k?t qu? d?t du?c**
 
-Kết quả thực nghiệm cho thấy mô hình AutoEncoder có khả năng học tốt phân bố của ảnh mống mắt thật thông qua việc tối ưu lỗi tái tạo. Đường cong hàm mất mát giảm nhanh ở giai đoạn đầu và ổn định ở các epoch sau phản ánh quá trình huấn luyện hiệu quả và khả năng hội tụ tốt của mô hình.
+K?t qu? th?c nghi?m cho th?y m� h�nh AutoEncoder c� kh? nang h?c t?t ph�n b? c?a ?nh m?ng m?t th?t th�ng qua vi?c t?i uu l?i t�i t?o. �u?ng cong h�m m?t m�t gi?m nhanh ? giai do?n d?u v� ?n d?nh ? c�c epoch sau ph?n �nh qu� tr�nh hu?n luy?n hi?u qu? v� kh? nang h?i t? t?t c?a m� h�nh.
 
-Phân tích lỗi tái tạo cho thấy các mẫu mống mắt thật có giá trị MSE nhỏ và tập trung quanh một ngưỡng nhất định, trong khi các mẫu mống mắt giả tạo ra lỗi tái tạo lớn hơn rõ rệt. Điều này chứng minh giả định cốt lõi của phương pháp đề xuất là hợp lý, đồng thời khẳng định tiềm năng sử dụng reconstruction error như một tiêu chí phát hiện bất thường trong bài toán Iris PAD.
+Ph�n t�ch l?i t�i t?o cho th?y c�c m?u m?ng m?t th?t c� gi� tr? MSE nh? v� t?p trung quanh m?t ngu?ng nh?t d?nh, trong khi c�c m?u m?ng m?t gi? t?o ra l?i t�i t?o l?n hon r� r?t. �i?u n�y ch?ng minh gi? d?nh c?t l�i c?a phuong ph�p d? xu?t l� h?p l�, d?ng th?i kh?ng d?nh ti?m nang s? d?ng reconstruction error nhu m?t ti�u ch� ph�t hi?n b?t thu?ng trong b�i to�n Iris PAD.
 
-Bên cạnh đó, kết quả đánh giá trên đường ROC cho thấy giá trị AUC cao, phản ánh khả năng phân biệt tốt giữa ảnh mống mắt thật và ảnh giả khi thay đổi ngưỡng quyết định. Độ trễ xử lý thấp và thông lượng cao cho thấy mô hình phù hợp với các yêu cầu triển khai gần thời gian thực.
+B�n c?nh d�, k?t qu? d�nh gi� tr�n du?ng ROC cho th?y gi� tr? AUC cao, ph?n �nh kh? nang ph�n bi?t t?t gi?a ?nh m?ng m?t th?t v� ?nh gi? khi thay d?i ngu?ng quy?t d?nh. �? tr? x? l� th?p v� th�ng lu?ng cao cho th?y m� h�nh ph� h?p v?i c�c y�u c?u tri?n khai g?n th?i gian th?c.
 
-**3.5.2. Các hạn chế của phương pháp**
+**3.5.2. C�c h?n ch? c?a phuong ph�p**
 
-Mặc dù đạt được những kết quả tích cực, phương pháp đề xuất vẫn tồn tại một số hạn chế. Trước hết, hiệu năng phân loại phụ thuộc đáng kể vào việc lựa chọn ngưỡng quyết định trên lỗi tái tạo. Việc xác định ngưỡng không phù hợp có thể dẫn đến tăng tỷ lệ báo động giả hoặc bỏ sót tấn công.
+M?c d� d?t du?c nh?ng k?t qu? t�ch c?c, phuong ph�p d? xu?t v?n t?n t?i m?t s? h?n ch?. Tru?c h?t, hi?u nang ph�n lo?i ph? thu?c d�ng k? v�o vi?c l?a ch?n ngu?ng quy?t d?nh tr�n l?i t�i t?o. Vi?c x�c d?nh ngu?ng kh�ng ph� h?p c� th? d?n d?n tang t? l? b�o d?ng gi? ho?c b? s�t t?n c�ng.
 
-<span style="color:red">**3.5.2.1 Phân tích độ nhạy với ngưỡng (Sensitivity Analysis)**
+**3.5.2.1 Ph�n t�ch d? nh?y v?i ngu?ng (Sensitivity Analysis)**
 
-Dựa trên phân bố MSE của validation set (Mean=0.000154, Std=0.000079), khả năng phân loại thay đổi theo ngưỡng:
+D?a tr�n ph�n b? MSE c?a validation set (Mean=0.000154, Std=0.000079), kh? nang ph�n lo?i thay d?i theo ngu?ng:
 
-**Bảng 3.X: Phân tích các mức ngưỡng**
+**B?ng 3.X: Ph�n t�ch c�c m?c ngu?ng**
 
-| Ngưỡng | Công thức | Giá trị | Đặc điểm | Trường hợp sử dụng |
+| Ngu?ng | C�ng th?c | Gi� tr? | �?c di?m | Tru?ng h?p s? d?ng |
 |--------|-----------|---------|----------|--------------------|
-| Thấp | Mean + 1×Std | 0.000233 | Recall cao, FPR cao | Ưu tiên bắt hết attack, chấp nhận false alarm |
-| Chuẩn | Mean + 2×Std | 0.000312 | Cân bằng (khuyến nghị) | Ứng dụng thông thường, balance precision/recall |
-| Cao | Mean + 3×Std | 0.000391 | FPR thấp, có thể miss attack | Yêu cầu chính xác cao, ít false alarm |
-| Rất cao | 95th percentile | 0.000298 | Dựa trên phân vị | Đảm bảo 95% REAL được chấp nhận |
+| Th?p | Mean + 1�Std | 0.000233 | Recall cao, FPR cao | Uu ti�n b?t h?t attack, ch?p nh?n false alarm |
+| Chu?n | Mean + 2�Std | 0.000312 | C�n b?ng (khuy?n ngh?) | ?ng d?ng th�ng thu?ng, balance precision/recall |
+| Cao | Mean + 3�Std | 0.000391 | FPR th?p, c� th? miss attack | Y�u c?u ch�nh x�c cao, �t false alarm |
+| R?t cao | 95th percentile | 0.000298 | D?a tr�n ph�n v? | �?m b?o 95% REAL du?c ch?p nh?n |
 
-**Nhận xét:**
-- Ngưỡng **Mean + 2×Std (0.000312)** được khuyến nghị vì cân bằng giữa detection rate và false positive rate theo quy tắc 2-sigma (khoảng 95% confidence).
-- Trong môi trường yêu cầu security cao (banking, government), nên dùng ngưỡng thấp hơn để đảm bảo bắt hết attack.
-- Trong môi trường yêu cầu user experience tốt (consumer apps), có thể tăng ngưỡng để giảm false rejection.
-- **Adaptive threshold** dựa trên validation set của từng deployment environment sẽ cho kết quả tốt nhất.</span>
+**Nh?n x�t:**
+- Ngu?ng **Mean + 2�Std (0.000312)** du?c khuy?n ngh? v� c�n b?ng gi?a detection rate v� false positive rate theo quy t?c 2-sigma (kho?ng 95% confidence).
+- Trong m�i tru?ng y�u c?u security cao (banking, government), n�n d�ng ngu?ng th?p hon d? d?m b?o b?t h?t attack.
+- Trong m�i tru?ng y�u c?u user experience t?t (consumer apps), c� th? tang ngu?ng d? gi?m false rejection.
+- **Adaptive threshold** d?a tr�n validation set c?a t?ng deployment environment s? cho k?t qu? t?t nh?t.
 
-<span style="color:red">**📊 Hình 3.4: Minh họa phân bố MSE và các mức ngưỡng**
+> **?? H�NH ?NH B? SUNG (C?n t?o - PRIORITY ???):**
+> H�nh 3.4 du?i d�y l� h�nh ?nh quan tr?ng nh?t c?n b? sung. Code Python d? t?o h�nh n�y c� trong file `DANH_SACH_ANH_CAN_BO_SUNG.md`.
 
-![](fig3_4_mse_distribution_thresholds.png)
+**?? H�nh 3.4: Minh h?a ph�n b? MSE v� c�c m?c ngu?ng**
 
-*Hình 3.4: Phân bố MSE (Reconstruction Error) trên Validation Set với các mức ngưỡng đề xuất*
+> **📝 GHI CHÚ - Hình 3.4 (TODO):**
+> Có thể bổ sung thêm biểu đồ F1-score vs Threshold để minh họa Sensitivity Analysis.
+> Hiện tại phần này được mô tả bằng Bảng 3.X.
 
-**Giải thích Hình 3.4:**
+*H�nh 3.4: Ph�n b? MSE (Reconstruction Error) tr�n Validation Set v?i c�c m?c ngu?ng d? xu?t*
 
-Hình 3.4 trình bày phân bố của lỗi tái tạo (MSE) trên tập validation gồm 579 ảnh mống mắt thật (REAL). Biểu đồ histogram màu xanh da trời thể hiện tần suất xuất hiện của các giá trị MSE, cho thấy phần lớn các mẫu REAL có MSE tập trung trong khoảng 0.0001 đến 0.0003.
+**Gi?i th�ch H�nh 3.4:**
 
-Năm đường thẳng đứng màu sắc khác nhau đại diện cho các mức ngưỡng được đề xuất:
-- **Đường đỏ đứt nét (Mean)**: Trung bình MSE = 0.000154
-- **Đường cam đứt nét (Mean+1×Std)**: Ngưỡng thấp = 0.000233, bao phủ ~84% REAL
-- **Đường xanh lá liền nét (Mean+2×Std)**: Ngưỡng khuyến nghị = 0.000312, bao phủ ~95% REAL
-- **Đường xanh dương đứt nét (Mean+3×Std)**: Ngưỡng cao = 0.000391, bao phủ ~99.7% REAL
-- **Đường tím đứt nét (95th Percentile)**: Ngưỡng dựa trên phân vị = 0.000298
+H�nh 3.4 tr�nh b�y ph�n b? c?a l?i t�i t?o (MSE) tr�n t?p validation g?m 579 ?nh m?ng m?t th?t (REAL). Bi?u d? histogram m�u xanh da tr?i th? hi?n t?n su?t xu?t hi?n c?a c�c gi� tr? MSE, cho th?y ph?n l?n c�c m?u REAL c� MSE t?p trung trong kho?ng 0.0001 d?n 0.0003.
 
-Hộp chú thích màu xanh lá nhạt ghi "95% REAL below this line" chỉ ra rằng với ngưỡng Mean+2×Std, 95% mẫu mống mắt thật sẽ được phân loại đúng (theo quy tắc 2-sigma của phân bố chuẩn). Đây là mức cân bằng tối ưu giữa việc phát hiện tấn công (Recall) và giảm báo động giả (Precision).
+Nam du?ng th?ng d?ng m�u s?c kh�c nhau d?i di?n cho c�c m?c ngu?ng du?c d? xu?t:
+- **�u?ng d? d?t n�t (Mean)**: Trung b�nh MSE = 0.000154
+- **�u?ng cam d?t n�t (Mean+1�Std)**: Ngu?ng th?p = 0.000233, bao ph? ~84% REAL
+- **�u?ng xanh l� li?n n�t (Mean+2�Std)**: Ngu?ng khuy?n ngh? = 0.000312, bao ph? ~95% REAL
+- **�u?ng xanh duong d?t n�t (Mean+3�Std)**: Ngu?ng cao = 0.000391, bao ph? ~99.7% REAL
+- **�u?ng t�m d?t n�t (95th Percentile)**: Ngu?ng d?a tr�n ph�n v? = 0.000298
 
-Biểu đồ này chứng minh rằng việc lựa chọn ngưỡng có ảnh hưởng trực tiếp đến hiệu năng phân loại: ngưỡng thấp hơn sẽ tăng False Positive Rate (từ chối người dùng hợp lệ), trong khi ngưỡng cao hơn có thể bỏ sót các tấn công (False Negative).</span>
+H?p ch� th�ch m�u xanh l� nh?t ghi "95% REAL below this line" ch? ra r?ng v?i ngu?ng Mean+2�Std, 95% m?u m?ng m?t th?t s? du?c ph�n lo?i d�ng (theo quy t?c 2-sigma c?a ph�n b? chu?n). ��y l� m?c c�n b?ng t?i uu gi?a vi?c ph�t hi?n t?n c�ng (Recall) v� gi?m b�o d?ng gi? (Precision).
 
-<span style="color:red">**💡 BỔ SUNG: Thêm phân tích Sensitivity Analysis**
+Bi?u d? n�y ch?ng minh r?ng vi?c l?a ch?n ngu?ng c� ?nh hu?ng tr?c ti?p d?n hi?u nang ph�n lo?i: ngu?ng th?p hon s? tang False Positive Rate (t? ch?i ngu?i d�ng h?p l?), trong khi ngu?ng cao hon c� th? b? s�t c�c t?n c�ng (False Negative).
 
-**3.5.X Phân tích độ nhạy với ngưỡng**
+**?? B? SUNG: Th�m ph�n t�ch Sensitivity Analysis**
 
-Khả năng phân loại phụ thuộc vào ngưỡng quyết định:
+**3.5.X Ph�n t�ch d? nh?y v?i ngu?ng**
 
-- **Ngưỡng thấp (Mean + 1×Std = 0.000233)**: Recall cao (phát hiện nhiều tấn công), nhưng FPR tăng (báo động giả nhiều).
-- **Ngưỡng trung bình (Mean + 2×Std = 0.000312)**: Cân bằng giữa Precision và Recall (khuyến nghị sử dụng).
-- **Ngưỡng cao (Mean + 3×Std = 0.000391)**: FPR rất thấp, nhưng có thể bỏ sót một số tấn công tinh vi.
+Kh? nang ph�n lo?i ph? thu?c v�o ngu?ng quy?t d?nh:
 
-*(Có thể thêm biểu đồ F1-score vs Threshold hoặc Precision-Recall curve)*</span>
+- **Ngu?ng th?p (Mean + 1�Std = 0.000233)**: Recall cao (ph�t hi?n nhi?u t?n c�ng), nhung FPR tang (b�o d?ng gi? nhi?u).
+- **Ngu?ng trung b�nh (Mean + 2�Std = 0.000312)**: C�n b?ng gi?a Precision v� Recall (khuy?n ngh? s? d?ng).
+- **Ngu?ng cao (Mean + 3�Std = 0.000391)**: FPR r?t th?p, nhung c� th? b? s�t m?t s? t?n c�ng tinh vi.
 
-Ngoài ra, do mô hình được huấn luyện theo hướng one-class và số lượng mẫu mống mắt giả dùng để đánh giá còn hạn chế, các chỉ số phân loại truyền thống như Precision, Recall và F1-score chưa phản ánh đầy đủ năng lực của hệ thống trong kịch bản thực tế phức tạp hơn.
+*(C� th? th�m bi?u d? F1-score vs Threshold ho?c Precision-Recall curve)*
 
-Bên cạnh đó, mô hình AutoEncoder có thể nhạy cảm với các yếu tố nhiễu, thay đổi ánh sáng hoặc biến dạng hình ảnh mạnh, đặc biệt khi những yếu tố này chưa được bao phủ đầy đủ trong dữ liệu huấn luyện.
+Ngo�i ra, do m� h�nh du?c hu?n luy?n theo hu?ng one-class v� s? lu?ng m?u m?ng m?t gi? d�ng d? d�nh gi� c�n h?n ch?, c�c ch? s? ph�n lo?i truy?n th?ng nhu Precision, Recall v� F1-score chua ph?n �nh d?y d? nang l?c c?a h? th?ng trong k?ch b?n th?c t? ph?c t?p hon.
 
-**3.5.3. Nguyên nhân của các hạn chế**
+B�n c?nh d�, m� h�nh AutoEncoder c� th? nh?y c?m v?i c�c y?u t? nhi?u, thay d?i �nh s�ng ho?c bi?n d?ng h�nh ?nh m?nh, d?c bi?t khi nh?ng y?u t? n�y chua du?c bao ph? d?y d? trong d? li?u hu?n luy?n.
 
-Những hạn chế nêu trên chủ yếu xuất phát từ đặc thù của bài toán và phương pháp tiếp cận. Việc không sử dụng dữ liệu tấn công trong giai đoạn huấn luyện giúp tăng khả năng tổng quát, nhưng đồng thời làm giảm khả năng tối ưu trực tiếp cho bài toán phân loại nhị phân.
+**3.5.3. Nguy�n nh�n c?a c�c h?n ch?**
 
-Bên cạnh đó, dữ liệu mống mắt thu thập trong điều kiện thực tế thường có sự đa dạng lớn về thiết bị, góc chụp và điều kiện chiếu sáng, trong khi tập dữ liệu huấn luyện chưa thể bao quát đầy đủ các biến thiên này. Điều này ảnh hưởng trực tiếp đến khả năng tái tạo chính xác của mô hình trong một số trường hợp đặc biệt.
+Nh?ng h?n ch? n�u tr�n ch? y?u xu?t ph�t t? d?c th� c?a b�i to�n v� phuong ph�p ti?p c?n. Vi?c kh�ng s? d?ng d? li?u t?n c�ng trong giai do?n hu?n luy?n gi�p tang kh? nang t?ng qu�t, nhung d?ng th?i l�m gi?m kh? nang t?i uu tr?c ti?p cho b�i to�n ph�n lo?i nh? ph�n.
 
-**3.5.3. Phân tích các trường hợp thất bại (Failure Cases)**
+B�n c?nh d�, d? li?u m?ng m?t thu th?p trong di?u ki?n th?c t? thu?ng c� s? da d?ng l?n v? thi?t b?, g�c ch?p v� di?u ki?n chi?u s�ng, trong khi t?p d? li?u hu?n luy?n chua th? bao qu�t d?y d? c�c bi?n thi�n n�y. �i?u n�y ?nh hu?ng tr?c ti?p d?n kh? nang t�i t?o ch�nh x�c c?a m� h�nh trong m?t s? tru?ng h?p d?c bi?t.
 
-<span style="color:red">Qua quá trình thử nghiệm và phân tích, hệ thống gặp khó khăn trong các trường hợp sau:
+**3.5.3. Ph�n t�ch c�c tru?ng h?p th?t b?i (Failure Cases)**
 
-**1. Điều kiện ánh sáng kém:**
-- **Vấn đề:** Ánh sáng yếu hoặc không đồng đều làm giảm chất lượng ảnh input, dẫn đến MSE tăng cao ngay cả với ảnh REAL.
-- **Nguyên nhân:** Model được train trên ảnh near-infrared chất lượng tốt, không bao phủ đủ các điều kiện ánh sáng khắc nghiệt.
-- **Hậu quả:** False Positive rate tăng (từ chối người dùng hợp lệ).
-- **Giải pháp đề xuất:** Data augmentation với brightness variation mạnh hơn, hoặc thêm preprocessing step CLAHE (Contrast Limited Adaptive Histogram Equalization) như trong `main_realtime_new.py`.
+> **?? PH?N B? SUNG M?I (Failure Cases Analysis):**
+> Ph?n n�y ph�n t�ch chi ti?t 5 lo?i failure cases m� model g?p ph?i, bao g?m c? False Positives (t? ch?i ngu?i d�ng h?p l?) v� False Negatives (ch?p nh?n t?n c�ng). ��y l� n?i dung quan tr?ng d? th? hi?n s? hi?u bi?t s�u s?c v? limitations c?a model.
 
-**2. Ảnh bị che một phần (occlusion):**
-- **Vấn đề:** Phản quang, mí mắt che, lông mi dài làm mask không chính xác.
-- **Nguyên nhân:** Preprocessing step crop eyebrows (1/3 top) không đủ trong trường hợp này.
-- **Hậu quả:** MSE outliers, classification không ổn định.
-- **Giải pháp đề xuất:** Cải thiện segmentation với semantic segmentation models hoặc adaptive masking.
+Qua qu� tr�nh th? nghi?m v� ph�n t�ch, h? th?ng g?p kh� khan trong c�c tru?ng h?p sau:
 
-**3. Ảnh màn hình chất lượng cao (High-quality display attacks):**
-- **Vấn đề:** Màn hình OLED/Retina display có độ phân giải rất cao, texture gần giống mắt thật.
-- **Nguyên nhân:** Model chỉ dựa vào reconstruction error, không detect được moiré pattern hay texture artifacts nhỏ.
-- **Hậu quả:** False Negative (bỏ sót attack).
-- **Giải pháp đề xuất:** Kết hợp multi-modal features như trong `main_realtime_new.py`: Moiré detection (FFT), texture variance, color saturation, sharpness analysis.
+**1. �i?u ki?n �nh s�ng k�m:**
+- **V?n d?:** �nh s�ng y?u ho?c kh�ng d?ng d?u l�m gi?m ch?t lu?ng ?nh input, d?n d?n MSE tang cao ngay c? v?i ?nh REAL.
+- **Nguy�n nh�n:** Model du?c train tr�n ?nh near-infrared ch?t lu?ng t?t, kh�ng bao ph? d? c�c di?u ki?n �nh s�ng kh?c nghi?t.
+- **H?u qu?:** False Positive rate tang (t? ch?i ngu?i d�ng h?p l?).
+- **Gi?i ph�p d? xu?t:** Data augmentation v?i brightness variation m?nh hon, ho?c th�m preprocessing step CLAHE (Contrast Limited Adaptive Histogram Equalization) nhu trong `main_realtime_new.py`.
 
-**4. Biến đổi về góc chụp và khoảng cách:**
-- **Vấn đề:** Training data từ dataset chuẩn với góc và khoảng cách cố định.
-- **Nguyên nhân:** Thiếu diversity trong training data về viewing angle và distance.
-- **Hậu quả:** Degradation khi deploy trong môi trường không controlled.
-- **Giải pháp đề xuất:** Augment data với perspective transforms, scale variations.
+**2. ?nh b? che m?t ph?n (occlusion):**
+- **V?n d?:** Ph?n quang, m� m?t che, l�ng mi d�i l�m mask kh�ng ch�nh x�c.
+- **Nguy�n nh�n:** Preprocessing step crop eyebrows (1/3 top) kh�ng d? trong tru?ng h?p n�y.
+- **H?u qu?:** MSE outliers, classification kh�ng ?n d?nh.
+- **Gi?i ph�p d? xu?t:** C?i thi?n segmentation v?i semantic segmentation models ho?c adaptive masking.
 
-**5. Sensor khác biệt (Cross-sensor problem):**
-- **Vấn đề:** Train trên sensor A, test trên sensor B cho kết quả kém.
-- **Nguyên nhân:** Sensor characteristics (spectral response, noise pattern) khác nhau.
-- **Hậu quả:** Model không generalize across sensors.
-- **Giải pháp đề xuất:** Domain adaptation techniques hoặc train trên multi-sensor dataset.</span>
+**3. ?nh m�n h�nh ch?t lu?ng cao (High-quality display attacks):**
+- **V?n d?:** M�n h�nh OLED/Retina display c� d? ph�n gi?i r?t cao, texture g?n gi?ng m?t th?t.
+- **Nguy�n nh�n:** Model ch? d?a v�o reconstruction error, kh�ng detect du?c moir� pattern hay texture artifacts nh?.
+- **H?u qu?:** False Negative (b? s�t attack).
+- **Gi?i ph�p d? xu?t:** K?t h?p multi-modal features nhu trong `main_realtime_new.py`: Moir� detection (FFT), texture variance, color saturation, sharpness analysis.
 
-<span style="color:red">**📊 Hình 3.5: Minh họa các trường hợp thất bại (Failure Cases)**
+**4. Bi?n d?i v? g�c ch?p v� kho?ng c�ch:**
+- **V?n d?:** Training data t? dataset chu?n v?i g�c v� kho?ng c�ch c? d?nh.
+- **Nguy�n nh�n:** Thi?u diversity trong training data v? viewing angle v� distance.
+- **H?u qu?:** Degradation khi deploy trong m�i tru?ng kh�ng controlled.
+- **Gi?i ph�p d? xu?t:** Augment data v?i perspective transforms, scale variations.
 
-![](fig3_5_failure_cases.png)
+**5. Sensor kh�c bi?t (Cross-sensor problem):**
+- **V?n d?:** Train tr�n sensor A, test tr�n sensor B cho k?t qu? k�m.
+- **Nguy�n nh�n:** Sensor characteristics (spectral response, noise pattern) kh�c nhau.
+- **H?u qu?:** Model kh�ng generalize across sensors.
+- **Gi?i ph�p d? xu?t:** Domain adaptation techniques ho?c train tr�n multi-sensor dataset.
 
-*Hình 3.5: Phân tích các trường hợp model thất bại trong phân loại*
+> **?? H�NH ?NH B? SUNG (C?n t?o - PRIORITY ???):**
+> H�nh 3.5 c?n t?o grid 2�3 v?i 6 failure cases (3 FP + 3 FN). Code Python chi ti?t c� trong file `DANH_SACH_ANH_CAN_BO_SUNG.md`.
 
-**Giải thích Hình 3.5:**
+**?? H�nh 3.5: Minh h?a c�c tru?ng h?p th?t b?i (Failure Cases)**
 
-Hình 3.5 minh họa các trường hợp điển hình mà mô hình gặp khó khăn trong việc phân loại chính xác, được chia thành hai nhóm:
+> **📝 GHI CHÚ - Hình 3.5 (TODO):**
+> Có thể bổ sung ảnh minh họa Failure Cases (grid 2×3 với 6 ví dụ: 3 FP + 3 FN).
+> Hiện tại phần này được mô tả chi tiết bằng text trong phần 3.5.3.
 
-**Dòng 1 - False Positives (REAL → FAKE):** Model dự đoán sai là FAKE khi thực tế là REAL
+*H�nh 3.5: Ph�n t�ch c�c tru?ng h?p model th?t b?i trong ph�n lo?i*
 
-1. **Low Light Condition (Ánh sáng yếu):**
-   - Input: Ảnh mống mắt thật nhưng chụp trong điều kiện thiếu sáng
-   - MSE: 0.0045 (cao bất thường, vượt threshold 0.000312)
-   - Nguyên nhân: Chất lượng ảnh kém, nhiễu cao làm model không reconstruct tốt
-   - Hậu quả: Từ chối người dùng hợp lệ (bad user experience)
+**Gi?i th�ch H�nh 3.5:**
 
-2. **Partial Occlusion (Che mất một phần):**
-   - Input: Phản quang hoặc mí mắt che một phần iris
-   - MSE: 0.0038 (cao do vùng bị che không match với training data)
-   - Nguyên nhân: Mask preprocessing không hoàn hảo, vùng bị che tạo artifacts
-   - Hậu quả: False rejection
+H�nh 3.5 minh h?a c�c tru?ng h?p di?n h�nh m� m� h�nh g?p kh� khan trong vi?c ph�n lo?i ch�nh x�c, du?c chia th�nh hai nh�m:
 
-3. **Motion Blur (Mờ do chuyển động):**
-   - Input: Ảnh bị mờ do người dùng di chuyển trong khi chụp
+**D�ng 1 - False Positives (REAL ? FAKE):** Model d? do�n sai l� FAKE khi th?c t? l� REAL
+
+1. **Low Light Condition (�nh s�ng y?u):**
+   - Input: ?nh m?ng m?t th?t nhung ch?p trong di?u ki?n thi?u s�ng
+   - MSE: 0.0045 (cao b?t thu?ng, vu?t threshold 0.000312)
+   - Nguy�n nh�n: Ch?t lu?ng ?nh k�m, nhi?u cao l�m model kh�ng reconstruct t?t
+   - H?u qu?: T? ch?i ngu?i d�ng h?p l? (bad user experience)
+
+2. **Partial Occlusion (Che m?t m?t ph?n):**
+   - Input: Ph?n quang ho?c m� m?t che m?t ph?n iris
+   - MSE: 0.0038 (cao do v�ng b? che kh�ng match v?i training data)
+   - Nguy�n nh�n: Mask preprocessing kh�ng ho�n h?o, v�ng b? che t?o artifacts
+   - H?u qu?: False rejection
+
+3. **Motion Blur (M? do chuy?n d?ng):**
+   - Input: ?nh b? m? do ngu?i d�ng di chuy?n trong khi ch?p
    - MSE: 0.0042 (cao do loss of detail)
-   - Nguyên nhân: Model train trên ảnh sharp, không bao phủ motion blur
-   - Hậu quả: Yêu cầu người dùng chụp lại nhiều lần
+   - Nguy�n nh�n: Model train tr�n ?nh sharp, kh�ng bao ph? motion blur
+   - H?u qu?: Y�u c?u ngu?i d�ng ch?p l?i nhi?u l?n
 
-**Dòng 2 - False Negatives (FAKE → REAL):** Model dự đoán sai là REAL khi thực tế là FAKE
+**D�ng 2 - False Negatives (FAKE ? REAL):** Model d? do�n sai l� REAL khi th?c t? l� FAKE
 
 1. **High-Quality OLED Display:**
-   - Input: Ảnh mống mắt hiển thị trên màn hình OLED cao cấp
-   - MSE: 0.0002 (thấp, dưới threshold)
-   - Nguyên nhân: OLED có độ phân giải cao, màu sắc chính xác, gần giống mắt thật
-   - Hậu quả: Cho phép tấn công thành công (security breach)
+   - Input: ?nh m?ng m?t hi?n th? tr�n m�n h�nh OLED cao c?p
+   - MSE: 0.0002 (th?p, du?i threshold)
+   - Nguy�n nh�n: OLED c� d? ph�n gi?i cao, m�u s?c ch�nh x�c, g?n gi?ng m?t th?t
+   - H?u qu?: Cho ph�p t?n c�ng th�nh c�ng (security breach)
 
 2. **High-Resolution Print:**
-   - Input: Ảnh in với độ phân giải rất cao trên giấy photo chất lượng
-   - MSE: 0.0003 (gần threshold nhưng vẫn pass)
-   - Nguyên nhân: Print quality tốt, texture gần với real iris
-   - Hậu quả: Bỏ sót presentation attack
+   - Input: ?nh in v?i d? ph�n gi?i r?t cao tr�n gi?y photo ch?t lu?ng
+   - MSE: 0.0003 (g?n threshold nhung v?n pass)
+   - Nguy�n nh�n: Print quality t?t, texture g?n v?i real iris
+   - H?u qu?: B? s�t presentation attack
 
 3. **Clear Contact Lens:**
-   - Input: Mắt thật đeo contact lens trong suốt không có texture
-   - MSE: 0.0001 (rất thấp, model nhầm là real)
-   - Nguyên nhân: Contact lens trong không thay đổi nhiều texture
-   - Hậu quả: Không detect được lens attack
+   - Input: M?t th?t deo contact lens trong su?t kh�ng c� texture
+   - MSE: 0.0001 (r?t th?p, model nh?m l� real)
+   - Nguy�n nh�n: Contact lens trong kh�ng thay d?i nhi?u texture
+   - H?u qu?: Kh�ng detect du?c lens attack
 
-**Phân tích:**
+**Ph�n t�ch:**
 
-Các failure cases này chỉ ra rằng model dựa hoàn toàn vào reconstruction error có limitations:
-- **False Positives** xảy ra khi ảnh REAL có quality issues (lighting, blur, occlusion) → Cần robust preprocessing
-- **False Negatives** xảy ra khi FAKE có quality cao gần với REAL → Cần multi-modal features (moiré, texture, frequency analysis)
+C�c failure cases n�y ch? ra r?ng model d?a ho�n to�n v�o reconstruction error c� limitations:
+- **False Positives** x?y ra khi ?nh REAL c� quality issues (lighting, blur, occlusion) ? C?n robust preprocessing
+- **False Negatives** x?y ra khi FAKE c� quality cao g?n v?i REAL ? C?n multi-modal features (moir�, texture, frequency analysis)
 
-Đây là lý do trong `main_realtime_new.py`, hệ thống đã được cải tiến với:
+��y l� l� do trong `main_realtime_new.py`, h? th?ng d� du?c c?i ti?n v?i:
 - CLAHE preprocessing cho lighting correction
-- Moiré pattern detection cho display attacks
+- Moir� pattern detection cho display attacks
 - Texture variance analysis
-- Sharpness và saturation checks
+- Sharpness v� saturation checks
 
-Kết hợp multiple features giúp giảm đáng kể cả False Positive và False Negative rates.</span>
+K?t h?p multiple features gi�p gi?m d�ng k? c? False Positive v� False Negative rates.
 
-**3.5.4. Tác động và ý nghĩa thực tế**
+**3.5.4. T�c d?ng v� � nghia th?c t?**
 
-Mặc dù còn tồn tại một số hạn chế, phương pháp đề xuất dựa trên AutoEncoder mang lại nhiều giá trị thực tiễn. Việc không yêu cầu dữ liệu tấn công trong quá trình huấn luyện giúp giảm đáng kể chi phí thu thập và gán nhãn dữ liệu, đồng thời tăng khả năng thích ứng với các kiểu tấn công mới chưa từng xuất hiện.
+M?c d� c�n t?n t?i m?t s? h?n ch?, phuong ph�p d? xu?t d?a tr�n AutoEncoder mang l?i nhi?u gi� tr? th?c ti?n. Vi?c kh�ng y�u c?u d? li?u t?n c�ng trong qu� tr�nh hu?n luy?n gi�p gi?m d�ng k? chi ph� thu th?p v� g�n nh�n d? li?u, d?ng th?i tang kh? nang th�ch ?ng v?i c�c ki?u t?n c�ng m?i chua t?ng xu?t hi?n.
 
-Với kiến trúc gọn nhẹ (0.78M parameters), độ trễ thấp (2.84ms) và khả năng hoạt động ổn định, mô hình có thể được sử dụng như một **lớp phát hiện liveness sơ cấp**, kết hợp với các phương pháp học có giám sát ở tầng sau nhằm nâng cao độ an toàn tổng thể của hệ thống sinh trắc học mống mắt.
+V?i ki?n tr�c g?n nh? (0.78M parameters), d? tr? th?p (2.84ms) v� kh? nang ho?t d?ng ?n d?nh, m� h�nh c� th? du?c s? d?ng nhu m?t **l?p ph�t hi?n liveness so c?p**, k?t h?p v?i c�c phuong ph�p h?c c� gi�m s�t ? t?ng sau nh?m n�ng cao d? an to�n t?ng th? c?a h? th?ng sinh tr?c h?c m?ng m?t.
 
-<span style="color:red">**💡 BỔ SUNG: Thêm phân tích Failure Cases**
+**?? B? SUNG: Th�m ph�n t�ch Failure Cases**
 
-**3.5.X Phân tích các trường hợp thất bại**
+**3.5.X Ph�n t�ch c�c tru?ng h?p th?t b?i**
 
-Phân tích cho thấy model gặp khó khăn trong các trường hợp sau:
+Ph�n t�ch cho th?y model g?p kh� khan trong c�c tru?ng h?p sau:
 
-1. **Điều kiện ánh sáng yếu**: MSE tăng cao cả với ảnh REAL do chất lượng ảnh kém, dẫn đến False Positive.
-2. **Ảnh bị che một phần**: Khi mask không chính xác (mí mắt che, phản quang), lỗi tái tạo tăng bất thường.
-3. **Ảnh màn hình chất lượng cao**: Các màn hình OLED/Retina có độ phân giải cao có MSE gần với ảnh REAL, khó phân biệt.
-4. **Texture không đồng nhất**: Ảnh có vết bẩn, phản quang hoặc nhiễu mạnh tạo ra outliers trong phân bố MSE.
+1. **�i?u ki?n �nh s�ng y?u**: MSE tang cao c? v?i ?nh REAL do ch?t lu?ng ?nh k�m, d?n d?n False Positive.
+2. **?nh b? che m?t ph?n**: Khi mask kh�ng ch�nh x�c (m� m?t che, ph?n quang), l?i t�i t?o tang b?t thu?ng.
+3. **?nh m�n h�nh ch?t lu?ng cao**: C�c m�n h�nh OLED/Retina c� d? ph�n gi?i cao c� MSE g?n v?i ?nh REAL, kh� ph�n bi?t.
+4. **Texture kh�ng d?ng nh?t**: ?nh c� v?t b?n, ph?n quang ho?c nhi?u m?nh t?o ra outliers trong ph�n b? MSE.
 
-*(Có thể thêm hình minh họa các failure cases)*</span>
+*(C� th? th�m h�nh minh h?a c�c failure cases)*
 
-**3.5.5. Nhận xét chung**
+**3.5.5. Nh?n x�t chung**
 
-Tổng hợp các phân tích cho thấy phương pháp phát hiện liveness mống mắt dựa trên AutoEncoder theo hướng học không giám sát là một hướng tiếp cận hợp lý và tiềm năng. Kết quả đạt được không chỉ chứng minh khả năng học đặc trưng của mô hình mà còn mở ra khả năng ứng dụng trong các hệ thống sinh trắc học thực tế, đặc biệt trong bối cảnh dữ liệu tấn công khó thu thập và liên tục thay đổi.
+T?ng h?p c�c ph�n t�ch cho th?y phuong ph�p ph�t hi?n liveness m?ng m?t d?a tr�n AutoEncoder theo hu?ng h?c kh�ng gi�m s�t l� m?t hu?ng ti?p c?n h?p l� v� ti?m nang. K?t qu? d?t du?c kh�ng ch? ch?ng minh kh? nang h?c d?c trung c?a m� h�nh m� c�n m? ra kh? nang ?ng d?ng trong c�c h? th?ng sinh tr?c h?c th?c t?, d?c bi?t trong b?i c?nh d? li?u t?n c�ng kh� thu th?p v� li�n t?c thay d?i.
 
-**KẾT LUẬN VÀ HƯỚNG PHÁT TRIỂN**
+**K?T LU?N V� HU?NG PH�T TRI?N**
 
-**1. Tóm tắt kết quả đạt được**
+**1. T�m t?t k?t qu? d?t du?c**
 
-Nghiên cứu này đã đề xuất và xây dựng một hệ thống phát hiện liveness mống mắt dựa trên mô hình **AutoEncoder theo hướng học không giám sát (one-class learning)**. Mô hình được huấn luyện chỉ với dữ liệu mống mắt thật và sử dụng **lỗi tái tạo (reconstruction error)** làm tiêu chí phát hiện các mẫu bất thường.
+Nghi�n c?u n�y d� d? xu?t v� x�y d?ng m?t h? th?ng ph�t hi?n liveness m?ng m?t d?a tr�n m� h�nh **AutoEncoder theo hu?ng h?c kh�ng gi�m s�t (one-class learning)**. M� h�nh du?c hu?n luy?n ch? v?i d? li?u m?ng m?t th?t v� s? d?ng **l?i t�i t?o (reconstruction error)** l�m ti�u ch� ph�t hi?n c�c m?u b?t thu?ng.
 
-Kết quả thực nghiệm cho thấy mô hình AutoEncoder có khả năng **hội tụ ổn định**, học tốt phân bố của ảnh mống mắt thật và tạo ra sự khác biệt rõ ràng về lỗi tái tạo giữa các mẫu mống mắt thật và các mẫu giả. Phân tích đường ROC cho thấy giá trị AUC cao, phản ánh tiềm năng phân biệt tốt giữa hai nhóm dữ liệu khi lựa chọn ngưỡng quyết định phù hợp. Bên cạnh đó, độ trễ xử lý thấp và thông lượng cao cho thấy mô hình có khả năng đáp ứng yêu cầu triển khai gần thời gian thực.
+K?t qu? th?c nghi?m cho th?y m� h�nh AutoEncoder c� kh? nang **h?i t? ?n d?nh**, h?c t?t ph�n b? c?a ?nh m?ng m?t th?t v� t?o ra s? kh�c bi?t r� r�ng v? l?i t�i t?o gi?a c�c m?u m?ng m?t th?t v� c�c m?u gi?. Ph�n t�ch du?ng ROC cho th?y gi� tr? AUC cao, ph?n �nh ti?m nang ph�n bi?t t?t gi?a hai nh�m d? li?u khi l?a ch?n ngu?ng quy?t d?nh ph� h?p. B�n c?nh d�, d? tr? x? l� th?p v� th�ng lu?ng cao cho th?y m� h�nh c� kh? nang d�p ?ng y�u c?u tri?n khai g?n th?i gian th?c.
 
-**2. Đóng góp chính của nghiên cứu**
+**2. ��ng g�p ch�nh c?a nghi�n c?u**
 
-Các đóng góp chính của nghiên cứu có thể được tóm tắt như sau:
+C�c d�ng g�p ch�nh c?a nghi�n c?u c� th? du?c t�m t?t nhu sau:
 
-- Đề xuất **cách tiếp cận phát hiện liveness mống mắt theo hướng học không giám sát**, giảm phụ thuộc vào dữ liệu tấn công có nhãn.
-- Xây dựng và đánh giá mô hình AutoEncoder cho bài toán Iris PAD, làm rõ vai trò của **reconstruction error** trong việc phát hiện bất thường.
-- Thực hiện phân tích toàn diện thông qua các chỉ số đánh giá, biểu đồ và hình minh họa, cho thấy tính khả thi của phương pháp trong các kịch bản thực tế.
-- Chứng minh tiềm năng ứng dụng của mô hình như một **lớp phát hiện liveness sơ cấp**, có thể tích hợp vào các hệ thống sinh trắc học mống mắt hiện có.
+- �? xu?t **c�ch ti?p c?n ph�t hi?n liveness m?ng m?t theo hu?ng h?c kh�ng gi�m s�t**, gi?m ph? thu?c v�o d? li?u t?n c�ng c� nh�n.
+- X�y d?ng v� d�nh gi� m� h�nh AutoEncoder cho b�i to�n Iris PAD, l�m r� vai tr� c?a **reconstruction error** trong vi?c ph�t hi?n b?t thu?ng.
+- Th?c hi?n ph�n t�ch to�n di?n th�ng qua c�c ch? s? d�nh gi�, bi?u d? v� h�nh minh h?a, cho th?y t�nh kh? thi c?a phuong ph�p trong c�c k?ch b?n th?c t?.
+- Ch?ng minh ti?m nang ?ng d?ng c?a m� h�nh nhu m?t **l?p ph�t hi?n liveness so c?p**, c� th? t�ch h?p v�o c�c h? th?ng sinh tr?c h?c m?ng m?t hi?n c�.
 
-**3. Hạn chế và tồn tại**
+**3. H?n ch? v� t?n t?i**
 
-Mặc dù đạt được những kết quả tích cực, nghiên cứu vẫn tồn tại một số hạn chế. Trước hết, do mô hình được huấn luyện theo hướng one-class và số lượng mẫu mống mắt giả dùng để đánh giá còn hạn chế, các chỉ số phân loại truyền thống như Precision, Recall và F1-score chưa phản ánh đầy đủ hiệu năng của hệ thống trong các kịch bản tấn công đa dạng.
+M?c d� d?t du?c nh?ng k?t qu? t�ch c?c, nghi�n c?u v?n t?n t?i m?t s? h?n ch?. Tru?c h?t, do m� h�nh du?c hu?n luy?n theo hu?ng one-class v� s? lu?ng m?u m?ng m?t gi? d�ng d? d�nh gi� c�n h?n ch?, c�c ch? s? ph�n lo?i truy?n th?ng nhu Precision, Recall v� F1-score chua ph?n �nh d?y d? hi?u nang c?a h? th?ng trong c�c k?ch b?n t?n c�ng da d?ng.
 
-Bên cạnh đó, hiệu quả của phương pháp phụ thuộc vào việc lựa chọn ngưỡng quyết định trên lỗi tái tạo. Việc xác định ngưỡng tối ưu trong môi trường triển khai thực tế vẫn là một thách thức. Ngoài ra, mô hình AutoEncoder có thể nhạy cảm với các yếu tố nhiễu mạnh, điều kiện chiếu sáng phức tạp hoặc các biến dạng hình ảnh chưa được bao phủ đầy đủ trong dữ liệu huấn luyện.
+B�n c?nh d�, hi?u qu? c?a phuong ph�p ph? thu?c v�o vi?c l?a ch?n ngu?ng quy?t d?nh tr�n l?i t�i t?o. Vi?c x�c d?nh ngu?ng t?i uu trong m�i tru?ng tri?n khai th?c t? v?n l� m?t th�ch th?c. Ngo�i ra, m� h�nh AutoEncoder c� th? nh?y c?m v?i c�c y?u t? nhi?u m?nh, di?u ki?n chi?u s�ng ph?c t?p ho?c c�c bi?n d?ng h�nh ?nh chua du?c bao ph? d?y d? trong d? li?u hu?n luy?n.
 
-**4. Hướng phát triển**
+**4. Hu?ng ph�t tri?n**
 
-Trong tương lai, nghiên cứu có thể được mở rộng theo một số hướng sau:
+Trong tuong lai, nghi�n c?u c� th? du?c m? r?ng theo m?t s? hu?ng sau:
 
-**4.1. Cải tiến kiến trúc model:**
-- Kết hợp mô hình AutoEncoder với các kỹ thuật học sâu khác, chẳng hạn như **Variational AutoEncoder (VAE)** hoặc **GAN**, nhằm nâng cao khả năng mô hình hóa phân bố dữ liệu.
-- Thử nghiệm với **Attention mechanisms** để model tập trung vào vùng iris quan trọng.
-- Áp dụng **Contrastive Learning** để học better representations.
+**4.1. C?i ti?n ki?n tr�c model:**
+- K?t h?p m� h�nh AutoEncoder v?i c�c k? thu?t h?c s�u kh�c, ch?ng h?n nhu **Variational AutoEncoder (VAE)** ho?c **GAN**, nh?m n�ng cao kh? nang m� h�nh h�a ph�n b? d? li?u.
+- Th? nghi?m v?i **Attention mechanisms** d? model t?p trung v�o v�ng iris quan tr?ng.
+- �p d?ng **Contrastive Learning** d? h?c better representations.
 
-**4.2. Tối ưu ngưỡng và deployment:**
-- Nghiên cứu các phương pháp **tự động xác định ngưỡng quyết định** (adaptive threshold), giúp tăng tính ổn định và khả năng triển khai thực tế.
-- Phát triển **meta-learning approaches** để quickly adapt threshold cho môi trường mới.
-- Xây dựng **confidence score** thay vì hard decision.
+**4.2. T?i uu ngu?ng v� deployment:**
+- Nghi�n c?u c�c phuong ph�p **t? d?ng x�c d?nh ngu?ng quy?t d?nh** (adaptive threshold), gi�p tang t�nh ?n d?nh v� kh? nang tri?n khai th?c t?.
+- Ph�t tri?n **meta-learning approaches** d? quickly adapt threshold cho m�i tru?ng m?i.
+- X�y d?ng **confidence score** thay v� hard decision.
 
-**4.3. Mở rộng dữ liệu và attack types:**
-- Mở rộng tập dữ liệu đánh giá với nhiều kiểu tấn công trình diễn khác nhau (in ảnh, màn hình, contact lens, deepfake) để đánh giá toàn diện hơn khả năng tổng quát của hệ thống.
-- Thu thập data trong diverse conditions (lighting, distance, angles).
+**4.3. M? r?ng d? li?u v� attack types:**
+- M? r?ng t?p d? li?u d�nh gi� v?i nhi?u ki?u t?n c�ng tr�nh di?n kh�c nhau (in ?nh, m�n h�nh, contact lens, deepfake) d? d�nh gi� to�n di?n hon kh? nang t?ng qu�t c?a h? th?ng.
+- Thu th?p data trong diverse conditions (lighting, distance, angles).
 
 **4.4. Multi-layer defense:**
-- Kết hợp phương pháp one-class với các mô hình học có giám sát ở tầng sau, hình thành hệ thống phát hiện liveness đa tầng nhằm nâng cao độ an toàn tổng thể.
-- Tích hợp multi-modal features (như đã implement trong `main_realtime_new.py`: moiré, sharpness, texture).
+- K?t h?p phuong ph�p one-class v?i c�c m� h�nh h?c c� gi�m s�t ? t?ng sau, h�nh th�nh h? th?ng ph�t hi?n liveness da t?ng nh?m n�ng cao d? an to�n t?ng th?.
+- T�ch h?p multi-modal features (nhu d� implement trong `main_realtime_new.py`: moir�, sharpness, texture).
 
-<span style="color:red">**4.5. Hạn chế về dataset và đánh giá tính tổng quát**
+**4.5. H?n ch? v? dataset v� d�nh gi� t�nh t?ng qu�t**
 
-Nghiên cứu hiện tại được thực hiện trên **dataset UBIPR2 duy nhất**, một bộ dữ liệu near-infrared iris images. Điều này tạo ra các hạn chế về tính tổng quát:
+Nghi�n c?u hi?n t?i du?c th?c hi?n tr�n **dataset UBIPR2 duy nh?t**, m?t b? d? li?u near-infrared iris images. �i?u n�y t?o ra c�c h?n ch? v? t�nh t?ng qu�t:
 
-**Vấn đề dataset bias:**
-- UBIPR2 thu thập trong điều kiện controlled (lab environment, fixed sensor, professional setup).
-- Không đại diện cho diversity trong real-world deployment (different sensors, lighting, user demographics).
-- Thiếu các loại attack đa dạng (chỉ có REAL iris trong training, chưa có comprehensive fake samples).
+**V?n d? dataset bias:**
+- UBIPR2 thu th?p trong di?u ki?n controlled (lab environment, fixed sensor, professional setup).
+- Kh�ng d?i di?n cho diversity trong real-world deployment (different sensors, lighting, user demographics).
+- Thi?u c�c lo?i attack da d?ng (ch? c� REAL iris trong training, chua c� comprehensive fake samples).
 
-**Cần thiết cross-dataset evaluation:**
+**C?n thi?t cross-dataset evaluation:**
 
-Để đánh giá **true generalization capability**, cần thử nghiệm trên nhiều datasets:
+�? d�nh gi� **true generalization capability**, c?n th? nghi?m tr�n nhi?u datasets:
 
 1. **LivDet-Iris competitions datasets:**
-   - Nhiều kiểu attack (printed, display, contact lens)
+   - Nhi?u ki?u attack (printed, display, contact lens)
    - Cross-sensor evaluation
    - Standardized evaluation protocol
 
 2. **Notre Dame Contact Lens Dataset:**
-   - Đánh giá khả năng detect contact lens attacks
+   - ��nh gi� kh? nang detect contact lens attacks
    - Textured vs clear lenses
 
 3. **IIITD-WVU Dataset:**
@@ -610,19 +648,19 @@ Nghiên cứu hiện tại được thực hiện trên **dataset UBIPR2 duy nh�
    - Post-mortem iris vs live iris
    - Aging effects
 
-**Đề xuất evaluation protocol:**
+**�? xu?t evaluation protocol:**
 
 ```
-Phase 1: Intra-dataset evaluation (hiện tại)
+Phase 1: Intra-dataset evaluation (hi?n t?i)
   - Train on UBIPR2 train set
   - Test on UBIPR2 test set
   - Baseline performance
 
-Phase 2: Cross-dataset evaluation (đề xuất)
+Phase 2: Cross-dataset evaluation (d? xu?t)
   - Train on UBIPR2
-  - Test on LivDet-Iris → Measure generalization
-  - Test on Notre Dame → Measure contact lens detection
-  - Test on IIITD-WVU → Measure cross-spectral robustness
+  - Test on LivDet-Iris ? Measure generalization
+  - Test on Notre Dame ? Measure contact lens detection
+  - Test on IIITD-WVU ? Measure cross-spectral robustness
 
 Phase 3: Cross-sensor evaluation
   - Train on Sensor A data
@@ -638,9 +676,9 @@ Phase 4: Multi-attack evaluation
 ```
 
 **Expected outcomes:**
-- Performance degradation in cross-dataset scenarios → Need domain adaptation
-- Different optimal thresholds per dataset → Need adaptive threshold
-- Some attack types may not be detected → Need multi-modal approach
+- Performance degradation in cross-dataset scenarios ? Need domain adaptation
+- Different optimal thresholds per dataset ? Need adaptive threshold
+- Some attack types may not be detected ? Need multi-modal approach
 
 **Mitigation strategies:**
 1. **Domain adaptation techniques:** Fine-tune on small labeled set from target domain
@@ -648,18 +686,19 @@ Phase 4: Multi-attack evaluation
 3. **Meta-learning:** Learn to quickly adapt to new domains
 4. **Ensemble methods:** Combine models trained on different datasets
 
-Kết luận: Nghiên cứu hiện tại là **proof-of-concept** trên single dataset. Để triển khai thực tế, cần extensive cross-dataset và cross-sensor evaluation để đảm bảo robustness và generalization.</span>
+K?t lu?n: Nghi�n c?u hi?n t?i l� **proof-of-concept** tr�n single dataset. �? tri?n khai th?c t?, c?n extensive cross-dataset v� cross-sensor evaluation d? d?m b?o robustness v� generalization.
 
-<span style="color:red">**💡 BỔ SUNG: Thêm hạn chế về dataset**
+**?? B? SUNG: Th�m h?n ch? v? dataset**
 
-**5. Hạn chế về dataset và tính tổng quát**
+**5. H?n ch? v? dataset v� t�nh t?ng qu�t**
 
-Nghiên cứu hiện tại được thực hiện trên dataset UBIPR2, một bộ dữ liệu near-infrared iris images. Để nâng cao tính tổng quát và khả năng áp dụng thực tế, cần:
+Nghi�n c?u hi?n t?i du?c th?c hi?n tr�n dataset UBIPR2, m?t b? d? li?u near-infrared iris images. �? n�ng cao t�nh t?ng qu�t v� kh? nang �p d?ng th?c t?, c?n:
 
-- **Cross-dataset evaluation**: Đánh giá trên các dataset khác như LivDet-Iris, IIITD-WVU, Notre Dame để kiểm tra khả năng tổng quát.
-- **Mở rộng loại tấn công**: Thử nghiệm với nhiều kiểu tấn công đa dạng hơn (in ảnh trên giấy, màn hình LCD/OLED/Retina, contact lens có texture, ảnh 3D).
-- **Điều kiện thu thập đa dạng**: Thử nghiệm với nhiều thiết bị camera, góc chụp, khoảng cách và điều kiện ánh sáng khác nhau.
-- **Đánh giá cross-sensor**: Kiểm tra hiệu năng khi train trên một sensor và test trên sensor khác.</span>
+- **Cross-dataset evaluation**: ��nh gi� tr�n c�c dataset kh�c nhu LivDet-Iris, IIITD-WVU, Notre Dame d? ki?m tra kh? nang t?ng qu�t.
+- **M? r?ng lo?i t?n c�ng**: Th? nghi?m v?i nhi?u ki?u t?n c�ng da d?ng hon (in ?nh tr�n gi?y, m�n h�nh LCD/OLED/Retina, contact lens c� texture, ?nh 3D).
+- **�i?u ki?n thu th?p da d?ng**: Th? nghi?m v?i nhi?u thi?t b? camera, g�c ch?p, kho?ng c�ch v� di?u ki?n �nh s�ng kh�c nhau.
+- **��nh gi� cross-sensor**: Ki?m tra hi?u nang khi train tr�n m?t sensor v� test tr�n sensor kh�c.
+
 
 
 
