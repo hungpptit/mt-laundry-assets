@@ -262,13 +262,12 @@ Với độ trễ trung bình dưới 3ms cho model inference, hệ thống hoà
 
 Hệ thống được triển khai và kiểm tra trong môi trường real-time với webcam (file `main_realtime_new.py`).
 
-**Bảng 3.X: Kết quả đánh giá real-time**
+**Bảng 3.9: Hiệu năng xử lý real-time**
 
 | Chỉ số | CPU | GPU (Tesla T4) |
 |--------|-----|----------------|
-| Latency (ms) | ~50 | 2.84 |
-| Throughput (FPS) | ~25 | 352 |
-| Detection rate (%) | 92 | 95 |
+| Mean Latency (ms) | ~50 | 2.84 ✅ |
+| Throughput (FPS) | ~25 | 352.2 ✅ |
 | Real-time suitability | Acceptable | Excellent |
 
 *Ghi chú: Kết quả đo trên Intel Core i5, Tesla T4 GPU, điều kiện ánh sáng tốt, webcam 720p*
@@ -279,21 +278,23 @@ Kết quả cho thấy với kiến trúc gọn nhẹ (0.78M parameters), mô h�
 
 - **Latency:** GPU nhanh hơn CPU khoảng **17.6 lần** (2.84ms so với ~50ms)
 - **Throughput:** GPU xử lý được nhiều hơn CPU khoảng **14 lần** (352 FPS so với ~25 FPS)
-- **Detection Rate:** Chênh lệch nhỏ giữa CPU (92%) và GPU (95%) cho thấy accuracy không phụ thuộc nhiều vào hardware
 
 Độ trễ 2.84ms trên GPU đảm bảo hệ thống phù hợp cho các ứng dụng yêu cầu real-time authentication như door access control, mobile unlock, hay payment verification.
 
-**Bảng 3.9 Tổng hợp các chỉ số đánh giá hiệu năng**
-
-|**Chỉ số**|**Giá trị**|
-| :- | :- |
-|Accuracy|0\.50|
-|Precision|0\.00|
-|Recall|0\.00|
-|F1-score|0\.00|
-|AUC-ROC|1\.00|
-|Mean Latency|2\.84 ms ✅ ✅|
-|Throughput|352\.2 FPS ✅ ✅|
+> **⚠️ LƯU Ý QUAN TRỌNG VỀ CLASSIFICATION METRICS:**
+> 
+> Các chỉ số phân loại (Accuracy, Precision, Recall, F1, AUC) được trình bày trong **Bảng 3.8** chỉ mang tính chất **demo minh họa** trên tập nhỏ (n=10 ảnh upload). Do mô hình được huấn luyện theo **one-class learning** (chỉ với REAL data), các metrics này **không phản ánh chính xác** khả năng thực tế của hệ thống vì:
+> 
+> 1. **Threshold mismatch:** Ngưỡng được tính trên validation set (near-infrared, chất lượng cao) không phù hợp với phân bố MSE của ảnh upload (webcam RGB, điều kiện đa dạng)
+> 2. **Dataset size:** Tập kiểm thử quá nhỏ (10 ảnh) không có ý nghĩa thống kê
+> 3. **Domain gap:** Dữ liệu huấn luyện (UBIPR2 NIR) khác biệt với dữ liệu test (ảnh upload)
+> 
+> **Để đánh giá đầy đủ, cần:**
+> - Đánh giá trên validation set UBIPR2 đầy đủ (579 REAL images)
+> - Thu thập tập FAKE đa dạng (printed photo, screen display, contact lens, etc.)
+> - Áp dụng adaptive threshold hoặc calibration cho từng deployment environment
+> 
+> **Hiệu năng inference** (Latency, Throughput trong Bảng 3.9) là các chỉ số **đáng tin cậy** và đại diện cho khả năng triển khai thực tế của mô hình.
 
 **3.4. So sánh với các phương pháp liên quan** ✅
 
