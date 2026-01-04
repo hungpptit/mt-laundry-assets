@@ -41,17 +41,17 @@ ubipr2/
 ```
 Ảnh gốc (images/) + Mask (masks/)
         ↓
-[PREPROCESSING] Crop eyebrows → Apply mask → Resize 128×128
+[TIỀN XỞ LÝ] Cắt lông mày → Áp dụng mask → Resize 128×128
         ↓
-processed_clean/ folder
+ Thư mục processed_clean/
         ↓
-[DATA AUGMENTATION] Flip, Rotate, Color Jitter
+[TĂNG CƯỜNG DỮ LIỆU] Lật, Xoay, Thay Đổi Màu
         ↓
-[TRAINING] AutoEncoder (MSE Loss)
+[HUẤN LUYỆN] AutoEncoder (MSE Loss)
         ↓
-[EVALUATION] Calculate threshold (Mean + 2×Std)
+[ĐÁNH GIÁ] Tính ngưỡng (Trung bình + 2×Độ lệch chuẩn)
         ↓
-Saved Model (.pt)
+Lưu Model (.pt)
 ```
 
 ---
@@ -510,17 +510,17 @@ TRƯỚC:                      SAU:
 
 ---
 
-## 3. DATA AUGMENTATION
+## 3. TĂNG CƯỜNG DỮ LIỆU
 
-### 3.1. Tại Sao Cần Data Augmentation?
+### 3.1. Tại Sao Cần Tăng Cường Dữ Liệu?
 
 **Vấn đề**:
-- Dataset nhỏ (~3800 images) → **Risk overfitting**
-- Model chỉ học thuộc lòng training data
+- Tập dữ liệu nhỏ (~3800 ảnh) → **Rủi ro overfitting**
+- Model chỉ học thuộc lòng dữ liệu huấn luyện
 
 **Giải pháp**:
-- Tăng cường dữ liệu (không tăng số lượng file, mà tăng **variation**)
-- Model học các **invariant features** (không phụ thuộc flip, rotate nhẹ)
+- Tăng cường dữ liệu (không tăng số lượng file, mà tăng **biến thiên**)
+- Model học các **đặc trưng bất biến** (không phụ thuộc lật, xoay nhẹ)
 
 ### 3.2. Code Chi Tiết (CELL 5)
 
@@ -531,6 +531,7 @@ train_transform = transforms.Compose([
     transforms.ColorJitter(brightness=0.1, contrast=0.1, saturation=0.1),
     transforms.ToTensor(),
 ])
+```
 ```
 
 #### 3.2.1. RandomHorizontalFlip(p=0.5)
@@ -607,14 +608,14 @@ val_indices = indices[train_size:]
 
 **Khái niệm**:
 ```
-Input Image → [ENCODER] → Latent Vector (compressed) → [DECODER] → Reconstructed Image
+Ảnh Đầu Vào → [BỘ MÃ HÓA] → Vector Ẩn (nén) → [BỘ GIẢI MÃ] → Ảnh Tái Tạo
 ```
 
 **Mục tiêu**:
-- Output ≈ Input (càng giống càng tốt)
-- Latent vector học được **compressed representation** của data
+- Đầu Ra ≈ Đầu Vào (càng giống càng tốt)
+- Vector Ẩn học được **biểu diễn nén** của dữ liệu
 
-### 4.2. Kiến Trúc Chi Tiết (Enhanced AutoEncoder)
+### 4.2. Kiến Trúc Chi Tiết (AutoEncoder Nâng Cao)
 
 ```python
 class AutoEncoder(nn.Module):
@@ -1655,31 +1656,31 @@ Threshold = Mean + 2×Std
 Real-time Detection
 ```
 
-### 9.2. Key Takeaways
-1. **Preprocessing**: Crop eyebrows + mask iris region → focus trên iris texture
-2. **Augmentation**: Flip, rotate, color jitter → robust với điều kiện khác nhau
-3. **AutoEncoder**: Enhanced architecture (BatchNorm + Dropout) → 2.5M params
-4. **Training**: AdamW + ReduceLROnPlateau + Early Stopping → stable convergence
-5. **Threshold**: Mean + 2×Std → 2.5% FPR (balance sensitivity/specificity)
+### 9.2. Điểm Chính
+1. **Tiền xử lý**: Cắt lông mày + che vùng mống mắt → tập trung vào kết cấu mống mắt
+2. **Tăng cường**: Lật, xoay, thay đổi màu → bền vững với điều kiện khác nhau
+3. **AutoEncoder**: Kiến trúc nâng cao (BatchNorm + Dropout) → 2.5M tham số
+4. **Huấn luyện**: AdamW + ReduceLROnPlateau + Dừng Sớm → hội tụ ổn định
+5. **Ngưỡng**: Trung bình + 2×Độ lệch chuẩn → FPR 2.5% (cân bằng độ nhạy/độ đặc hiệu)
 
-### 9.3. Strengths
-✅ **Unsupervised**: Chỉ cần REAL iris (không cần labels FAKE)  
-✅ **Lightweight**: 2.5M params → fast inference (~3-5ms)  
-✅ **Robust**: Data augmentation + regularization  
-✅ **Interpretable**: MSE threshold dễ hiểu, dễ tune  
+### 9.3. Điểm Mạnh
+✅ **Không giám sát**: Chỉ cần mống mắt THẬT (không cần nhãn GIẢ)  
+✅ **Nhẹ**: 2.5M tham số → suy luận nhanh (~3-5ms)  
+✅ **Bền vững**: Tăng cường dữ liệu + điều chuẩn hóa  
+✅ **Dễ hiểu**: Ngưỡng MSE dễ hiểu, dễ điều chỉnh  
 
-### 9.4. Limitations & Future Work
-❌ **Single modality**: Chỉ dựa vào reconstruction error  
-❌ **Advanced attacks**: Contact lens, high-quality prints có thể bypass  
-❌ **Lighting sensitivity**: Cần improve preprocessing (CLAHE, histogram equalization)  
+### 9.4. Hạn Chế & Công Việc Tương Lai
+❌ **Phương thức đơn**: Chỉ dựa vào lỗi tái tạo  
+❌ **Tấn công tiên tiến**: Kính áp tròng, ảnh in chất lượng cao có thể vượt qua  
+❌ **Nhạy cảm với ánh sáng**: Cần cải thiện tiền xử lý (CLAHE, cân bằng histogram)  
 
-**Future directions**:
-- Combine reconstruction + **texture features** (LBP, BSIF)
-- **Multi-task learning**: Reconstruction + classification
-- **3D analysis**: Depth estimation from monocular camera
+**Hướng phát triển**:
+- Kết hợp tái tạo + **đặc trưng kết cấu** (LBP, BSIF)
+- **Học đa nhiệm vụ**: Tái tạo + phân loại
+- **Phân tích 3D**: Ước lượng độ sâu từ camera đơn
 
 ---
 
-**Tài liệu này được tạo để hỗ trợ hiểu sâu về quá trình training AutoEncoder model cho iris liveness detection. Mọi câu hỏi về implementation details, theory, hoặc design choices đều đã được giải thích chi tiết ở trên.**
+**Tài liệu này được tạo để hỗ trợ hiểu sâu về quá trình huấn luyện model AutoEncoder cho phát hiện sự sống mống mắt. Mọi câu hỏi về chi tiết triển khai, lý thuyết, hoặc lựa chọn thiết kế đều đã được giải thích chi tiết ở trên.**
 
 📧 Liên hệ nếu cần thêm thông tin!
