@@ -2,13 +2,13 @@
 
 ## 📋 MỤC LỤC
 1. [Tổng Quan Hệ Thống](#1-tổng-quan-hệ-thống)
-2. [Model Architecture và Loading](#2-model-architecture-và-loading)
-3. [MediaPipe Face Mesh Integration](#3-mediapipe-face-mesh-integration)
-4. [Preprocessing Pipeline](#4-preprocessing-pipeline)
-5. [Feature Extraction](#5-feature-extraction)
-6. [Multi-Modal Detection](#6-multi-modal-detection)
-7. [Temporal Smoothing](#7-temporal-smoothing)
-8. [Real-time Performance](#8-real-time-performance)
+2. [Kiến Trúc Model và Nạp Model](#2-kiến-trúc-model-và-nạp-model)
+3. [Tích Hợp MediaPipe Face Mesh](#3-tích-hợp-mediapipe-face-mesh)
+4. [Pipeline Tiền Xử Lý](#4-pipeline-tiền-xử-lý)
+5. [Trích Xuất Đặc Trưng](#5-trích-xuất-đặc-trưng)
+6. [Phát Hiện Đa Phương Thức](#6-phát-hiện-đa-phương-thức)
+7. [Làm Mượt Theo Thời Gian](#7-làm-mượt-theo-thời-gian)
+8. [Hiệu Năng Thời Gian Thực](#8-hiệu-năng-thời-gian-thực)
 9. [Câu Hỏi Phản Biện và Trả Lời](#9-câu-hỏi-phản-biện-và-trả-lời)
 
 ---
@@ -43,18 +43,18 @@ Webcam Frame (1280×720)
 Display: REAL or FAKE
 ```
 
-### 1.3. Key Components
-1. **Model**: Enhanced AutoEncoder (2.5M params)
-2. **Face Detection**: MediaPipe Face Mesh (iris landmarks)
-3. **Preprocessing**: Lighting correction + masking
-4. **Features**: 6 complementary features (reconstruction + traditional CV)
-5. **Decision**: Hard thresholds + temporal voting
+### 1.3. Các Thành Phần Chính
+1. **Model**: AutoEncoder Nâng Cao (2.5M tham số)
+2. **Phát Hiện Khuôn Mặt**: MediaPipe Face Mesh (điểm đặc trưng mống mắt)
+3. **Tiền Xử Lý**: Hiệu chỉnh ánh sáng + che phủ
+4. **Đặc Trưng**: 6 đặc trưng bổ sung (tái tạo + CV truyền thống)
+5. **Quyết Định**: Ngưỡng cứng + bỏ phiếu theo thời gian
 
 ---
 
-## 2. MODEL ARCHITECTURE VÀ LOADING
+## 2. KIẾN TRÚC MODEL VÀ NẠP MODEL
 
-### 2.1. Model Architecture (Enhanced AutoEncoder)
+### 2.1. Kiến Trúc Model (AutoEncoder Nâng Cao)
 
 ```python
 class AutoEncoder(nn.Module):
@@ -106,7 +106,7 @@ class AutoEncoder(nn.Module):
 - **Parameters**: ~2.5M
 - **Inference time**: ~3-5ms per image (GPU)
 
-### 2.2. Model Loading
+### 2.2. Nạp Model
 
 ```python
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -120,17 +120,17 @@ model.eval()
 ```
 
 **Giải thích**:
-- `torch.load()`: Load checkpoint (dict chứa state_dict, epoch, val_loss)
-- `load_state_dict()`: Load trained weights vào model
+- `torch.load()`: Nạp checkpoint (dict chứa state_dict, epoch, val_loss)
+- `load_state_dict()`: Nạp trọng số đã huấn luyện vào model
 - `model.eval()`: 
-  - Tắt Dropout (inference mode)
-  - BatchNorm dùng **running statistics** (không phụ thuộc batch hiện tại)
+  - Tắt Dropout (chế độ suy luận)
+  - BatchNorm dùng **thống kê tích lũy** (không phụ thuộc batch hiện tại)
 
-**Checkpoint structure**:
+**Cấu trúc Checkpoint**:
 ```python
 {
     'epoch': 42,
-    'model_state_dict': OrderedDict(...),  # Weights
+    'model_state_dict': OrderedDict(...),  # Trọng số
     'optimizer_state_dict': {...},
     'val_loss': 0.002134
 }
@@ -138,49 +138,49 @@ model.eval()
 
 ---
 
-## 3. MEDIAPIPE FACE MESH INTEGRATION
+## 3. TÍCH HỢP MEDIAPIPE FACE MESH
 
 ### 3.1. MediaPipe Face Mesh Là Gì?
 
 **MediaPipe Face Mesh** (Google):
-- Detect **468 facial landmarks** real-time
-- **Refined landmarks**: 10 iris landmarks (5 per eye)
-- CPU-friendly: ~30-60 FPS
+- Phát hiện **468 điểm đặc trưng khuôn mặt** thời gian thực
+- **Điểm đặc trưng chi tiết**: 10 điểm mống mắt (5 điểm mỗi mắt)
+- Thân thiện với CPU: ~30-60 FPS
 
-### 3.2. Iris Landmarks
+### 3.2. Điểm Đặc Trưng Mống Mắt
 
 ```python
-# Iris landmarks (MediaPipe indices)
-LEFT_IRIS = [469, 470, 471, 472]   # 4 points: center + 3 boundary
+# Iris landmarks (chỉ số MediaPipe)
+LEFT_IRIS = [469, 470, 471, 472]   # 4 điểm: tâm + 3 biên
 RIGHT_IRIS = [474, 475, 476, 477]
 ```
 
-**Visualization**:
+**Minh họa**:
 ```
-       470 (top)
+       470 (trên)
         |
-471 -- 469 -- 472  (center at 469)
+471 -- 469 -- 472  (tâm tại 469)
         |
-      (bottom)
+      (dưới)
 ```
 
-### 3.3. Face Mesh Configuration
+### 3.3. Cấu Hình Face Mesh
 
 ```python
 mp_face_mesh = mp.solutions.face_mesh
 face_mesh = mp_face_mesh.FaceMesh(
-    max_num_faces=1,              # Chỉ detect 1 face (faster)
-    refine_landmarks=True,        # Enable iris landmarks
-    min_detection_confidence=0.5, # Threshold để detect face mới
-    min_tracking_confidence=0.5   # Threshold để track face hiện tại
+    max_num_faces=1,              # Chỉ phát hiện 1 khuôn mặt (nhanh hơn)
+    refine_landmarks=True,        # Bật điểm đặc trưng mống mắt
+    min_detection_confidence=0.5, # Ngưỡng để phát hiện khuôn mặt mới
+    min_tracking_confidence=0.5   # Ngưỡng để theo dõi khuôn mặt hiện tại
 )
 ```
 
-**Parameters**:
-- `max_num_faces=1`: Giả định 1 user (authentication scenario)
-- `refine_landmarks=True`: **BẮT BUỘC** để có iris landmarks (469-477)
-- `min_detection_confidence=0.5`: Trade-off giữa accuracy và speed
-- `min_tracking_confidence=0.5`: Tracking nhẹ hơn detection → FPS cao hơn
+**Tham số**:
+- `max_num_faces=1`: Giả định 1 người dùng (kịch bản xác thực)
+- `refine_landmarks=True`: **BẮT BUỘC** để có điểm đặc trưng mống mắt (469-477)
+- `min_detection_confidence=0.5`: Cân bằng giữa độ chính xác và tốc độ
+- `min_tracking_confidence=0.5`: Theo dõi nhẹ hơn phát hiện → FPS cao hơn
 
 ### 3.4. Landmark Extraction
 
@@ -403,12 +403,12 @@ iris_radius = int(15.0 / 2)
 
 ---
 
-## 4. PREPROCESSING PIPELINE
+## 4. PIPELINE TIỀN XỞ LÝ
 
-### 4.1. ROI Extraction với Padding
+### 4.1. Trích Xuất ROI Với Padding
 
 ```python
-expand = 30  # pixels padding
+expand = 30  # pixels padding (vùng đệm thêm)
 x1 = max(0, iris_center[0] - iris_radius - expand)
 y1 = max(0, iris_center[1] - iris_radius - expand)
 x2 = min(w, iris_center[0] + iris_radius + expand)
@@ -419,8 +419,8 @@ roi = frame[y1:y2, x1:x2]
 
 **Giải thích**:
 - **expand=30**: Padding thêm 30 pixels mỗi bên
-  - Lý do: Iris radius chỉ ~15-25 pixels → cần thêm context (eyelids, sclera)
-  - Tránh crop quá sát → mất thông tin
+  - Lý do: Bán kính mống mắt chỉ ~15-25 pixels → cần thêm ngữ cảnh (mí mắt, lòng trắng)
+  - Tránh cắt quá sát → mất thông tin
 
 **Visualization**:
 ```
@@ -440,24 +440,24 @@ roi = frame[y1:y2, x1:x2]
 └──────────────┘
 ```
 
-### 4.2. Lighting Correction
+### 4.2. Hiệu Chỉnh Ánh Sáng
 
 ```python
 def correct_lighting(image):
-    """CLAHE + Gamma Correction + Histogram Equalization"""
+    """CLAHE + Hiệu Chỉnh Gamma + Cân Bằng Histogram"""
     lab = cv2.cvtColor(image, cv2.COLOR_BGR2LAB)
     l, a, b = cv2.split(lab)
     
-    # Step 1: CLAHE (Contrast Limited Adaptive Histogram Equalization)
+    # Bước 1: CLAHE (Cân Bằng Histogram Thích ứng Giới Hạn Tương Phản)
     clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
     l_clahe = clahe.apply(l)
     
-    # Step 2: Gamma correction
+    # Bước 2: Hiệu chỉnh gamma
     gamma = 1.2
     l_gamma = np.power(l_clahe / 255.0, gamma) * 255.0
     l_gamma = np.uint8(l_gamma)
     
-    # Step 3: Histogram equalization
+    # Bước 3: Cân bằng histogram
     l_eq = cv2.equalizeHist(l_gamma)
     
     lab_corrected = cv2.merge([l_eq, a, b])
@@ -465,17 +465,17 @@ def correct_lighting(image):
     return corrected
 ```
 
-#### 4.2.1. Tại Sao Cần Lighting Correction?
+#### 4.2.1. Tại Sao Cần Hiệu Chỉnh Ánh Sáng?
 
 **Vấn đề**:
-- Indoor/outdoor: Lighting khác nhau
-- Shadows: Một phần mắt bị tối
-- Overexposure: Flash quá sáng → wash out details
+- Trong nhà/ngoài trời: Ánh sáng khác nhau
+- Bóng tối: Một phần mắt bị tối
+- Phơi sáng quá: Flash quá sáng → mất chi tiết
 
 **Mục tiêu**:
-- **Normalize lighting**: Đưa về điều kiện ánh sáng chuẩn
-- **Enhance contrast**: Làm rõ texture details
-- **Preserve color**: Chỉ điều chỉnh brightness channel (L trong LAB)
+- **Chuẩn hóa ánh sáng**: Đưa về điều kiện ánh sáng chuẩn
+- **Tăng cường tương phản**: Làm rõ chi tiết kết cấu
+- **Bảo toàn màu sắc**: Chỉ điều chỉnh kênh độ sáng (L trong LAB)
 
 #### 4.2.2. LAB Color Space
 
@@ -982,33 +982,33 @@ Total GPU memory: 192 KB
 
 ---
 
-## 5. FEATURE EXTRACTION
+## 5. TRÍCH XUẤT ĐẶC TRƯƠNG
 
-### 5.1. Tại Sao Cần Multiple Features?
+### 5.1. Tại Sao Cần Nhiều Đặc Trưng?
 
 **Vấn đề**:
-- Chỉ dùng **reconstruction error (MSE)** → không đủ robust
-- FAKE attack ngày càng sophisticated (high-quality prints, OLED screens)
+- Chỉ dùng **lỗi tái tạo (MSE)** → không đủ mạnh
+- Tấn công GIẢ ngày càng tinh vi (ảnh in chất lượng cao, màn hình OLED)
 
 **Giải pháp**:
-- **Multi-modal detection**: Kết hợp reconstruction + traditional CV features
-- Mỗi feature capture khía cạnh khác nhau của liveness
+- **Phát hiện đa phương thức**: Kết hợp tái tạo + các đặc trưng CV truyền thống
+- Mỗi đặc trưng nắm bắt khía cạnh khác nhau của sự sống
 
-### 5.2. Feature 1: Reconstruction Error (MSE)
+### 5.2. Đặc Trưng 1: Lỗi Tái Tạo (MSE)
 
 ```python
-# Model inference
+# Suy luận model
 with torch.no_grad():
     recon = model(tensor)
     mse = nn.MSELoss()(tensor, recon).item()
 ```
 
 **Ý nghĩa**:
-- Core feature từ AutoEncoder
-- REAL iris: Model reconstruct tốt → **MSE thấp** (0.001-0.003)
-- FAKE iris: Reconstruct kém → **MSE cao** (>0.008)
+- Đặc trưng cốt lõi từ AutoEncoder
+- Mống mắt THẬT: Model tái tạo tốt → **MSE thấp** (0.001-0.003)
+- Mống mắt GIẢ: Tái tạo kém → **MSE cao** (>0.008)
 
-**Threshold**: `MSE < 0.008` = REAL
+**Ngưỡng**: `MSE < 0.008` = THẬT
 
 ### 5.3. Feature 2: Local Binary Pattern (LBP)
 
@@ -1493,17 +1493,17 @@ Moiré Score = Max_magnitude / Mean_magnitude
 
 ---
 
-## 6. MULTI-MODAL DETECTION
+## 6. PHÁT HIỆN ĐA PHƯƠNG THỨC
 
-### 6.1. Hard Threshold Decision
+### 6.1. Quyết Định Ngưỡng Cứng
 
 ```python
 THRESHOLDS = {
-    'recon_error_max': 0.008,   # MSE < 0.008 = REAL
-    'sharpness_min': 150.0,     # Sharpness > 150 = REAL
-    'texture_max': 1800.0,      # Texture < 1800 = REAL
-    'saturation_max': 100.0,    # Saturation < 100 = REAL
-    'moire_max': 120.0,         # Moiré < 120 = REAL
+    'recon_error_max': 0.008,   # MSE < 0.008 = THẬT
+    'sharpness_min': 150.0,     # Độ sắc nét > 150 = THẬT
+    'texture_max': 1800.0,      # Kết cấu < 1800 = THẬT
+    'saturation_max': 100.0,    # Bão hòa < 100 = THẬT
+    'moire_max': 120.0,         # Moiré < 120 = THẬT
 }
 
 is_real_now = (
@@ -1516,9 +1516,9 @@ is_real_now = (
 ```
 
 **Giải thích**:
-- **AND logic**: TẤT CẢ điều kiện phải thỏa mãn
-- **Conservative approach**: Prefer False Negative over False Positive
-  - Tức là: Thà bỏ sót REAL (reject user) còn hơn nhận nhầm FAKE (security risk)
+- **Logic AND**: TẤT CẢ điều kiện phải thỏa mãn
+- **Cách tiếp cận thận trọng**: Ơu tiên False Negative hơn False Positive
+  - Tức là: Thà bỏ sót THẬT (từ chối người dùng) còn hơn nhận nhầm GIẢ (rủi ro bảo mật)
 
 ### 6.2. Feature Importance
 
@@ -1558,20 +1558,20 @@ raw_confidence = 0.85*0.6 + 0.67*0.4 = 0.778 (77.8%)
 
 ---
 
-## 7. TEMPORAL SMOOTHING
+## 7. LÀM MƯỢT THEO THỜI GIAN
 
-### 7.1. Tại Sao Cần Temporal Smoothing?
+### 7.1. Tại Sao Cần Làm Mượt Theo Thời Gian?
 
 **Vấn đề**:
-- Frame-by-frame decision → **jittering** (nhấp nháy REAL/FAKE)
-- False alarms do:
-  - Motion blur (user đang di chuyển)
-  - Lighting changes (đèn bật/tắt)
-  - Occlusion tạm thời (blink, eyelid)
+- Quyết định từng khung hình → **nhấp nháy** (chuyển THẬT/GIẢ liên tục)
+- Báo động giả do:
+  - Mờ chuyển động (người dùng đang di chuyển)
+  - Thay đổi ánh sáng (đèn bật/tắt)
+  - Che khuất tạm thời (chớp mắt, mí mắt)
 
 **Giải pháp**:
-- **Voting mechanism**: Tích lũy kết quả 10 frames → vote
-- Stable decision: Cần ≥50% frames vote REAL
+- **Cơ chế bỏ phiếu**: Tích lũy kết quả 10 khung hình → bỏ phiếu
+- Quyết định ổn định: Cần ≥50% khung hình bỏ phiếu THẬT
 
 ### 7.2. Implementation
 
@@ -1628,9 +1628,9 @@ With smoothing (buffer = [1,1,1,1,1,0,1,1,1,1]):
 
 ---
 
-## 8. REAL-TIME PERFORMANCE
+## 8. HIỆU NĂNG THỜI GIAN THỰC
 
-### 8.1. FPS Optimization
+### 8.1. Tối Ưu Hóa FPS
 
 ```python
 cap = cv2.VideoCapture(0)
@@ -1644,7 +1644,7 @@ fps_display = 0
 while cap.isOpened():
     ret, frame = cap.read()
     
-    # FPS calculation
+    # Tính toán FPS
     fps_counter += 1
     if time.time() - fps_start_time > 1:
         fps_display = fps_counter
@@ -1653,8 +1653,8 @@ while cap.isOpened():
 ```
 
 **Giải thích**:
-- Resolution: 1280×720 (balance giữa quality và speed)
-- FPS counter: Update mỗi 1 giây
+- Độ phân giải: 1280×720 (cân bằng giữa chất lượng và tốc độ)
+- Bộ đếm FPS: Cập nhật mỗi 1 giây
 
 ### 8.2. Performance Breakdown
 
@@ -2102,61 +2102,61 @@ else:  # score < 0.7
 - ⚠️ **Moiré**: Mask không có screen grid → pass
 - ⚠️ **Saturation**: Có thể fake được (painted mask)
 
-**Additional defenses needed**:
-1. **Liveness challenge**:
-   - Request blink → mask cannot blink
-   - Request eye movement → mask static
+**Các biện pháp phòng thủ bổ sung cần thiết**:
+1. **Thử thách sự sống**:
+   - Yêu cầu chớp mắt → mặt nạ không thể chớp mắt
+   - Yêu cầu di chuyển mắt → mặt nạ tĩnh
    
-2. **Reflection analysis**:
-   - Real iris: Corneal reflection (specular highlights)
-   - Mask: Diffuse reflection (no highlight)
+2. **Phân tích phản xạ**:
+   - Mống mắt thật: Phản xạ giác mạc (điểm sáng phản chiếu)
+   - Mặt nạ: Phản xạ khuếch tán (không có điểm sáng)
    
    ```python
    def detect_specular_highlight(roi):
        gray = cv2.cvtColor(roi, cv2.COLOR_BGR2GRAY)
        _, bright = cv2.threshold(gray, 240, 255, cv2.THRESH_BINARY)
        highlight_ratio = np.sum(bright > 0) / bright.size
-       return highlight_ratio > 0.01  # Real iris has highlights
+       return highlight_ratio > 0.01  # Mống mắt thật có điểm sáng
    ```
 
-3. **Depth estimation** (stereo camera or structured light):
-   - Real iris: 3D depth varies (cornea bulge)
-   - Mask: Uniform depth (flat or spherical)
+3. **Ước lượng độ sâu** (camera stereo hoặc ánh sáng cấu trúc):
+   - Mống mắt thật: Độ sâu 3D thay đổi (giác mạc lồi)
+   - Mặt nạ: Độ sâu đồng nhất (phẳng hoặc hình cầu)
 
 **Kết luận**:
-- ✅ Current system **sufficient** for print/screen attacks (95%+ attacks)
-- ⚠️ Need **liveness challenge** for 3D masks (4% attacks)
-- ❌ Need **multi-modal** (depth, thermal) for prosthetics (1% attacks)
+- ✅ Hệ thống hiện tại **đủ mạnh** cho tấn công in/màn hình (95%+ tấn công)
+- ⚠️ Cần **thử thách sự sống** cho mặt nạ 3D (4% tấn công)
+- ❌ Cần **đa phương thức** (độ sâu, nhiệt) cho chi tiết giả (1% tấn công)
 
 ---
 
 ## 10. KẾT LUẬN
 
-### 10.1. Strengths
-✅ **Real-time performance**: 22-30 FPS  
-✅ **Multi-modal detection**: 6 complementary features  
-✅ **Robust to lighting**: CLAHE + Gamma correction  
-✅ **Temporal smoothing**: Reduce false alarms  
-✅ **Lightweight model**: 2.5M params → edge deployment  
+### 10.1. Điểm Mạnh
+✅ **Hiệu năng thời gian thực**: 22-30 FPS  
+✅ **Phát hiện đa phương thức**: 6 đặc trưng bổ sung  
+✅ **Bền vững với ánh sáng**: CLAHE + Hiệu chỉnh Gamma  
+✅ **Làm mượt theo thời gian**: Giảm báo động giả  
+✅ **Model nhẹ**: 2.5M tham số → triển khai trên thiết bị biên  
 
-### 10.2. Limitations
-❌ **3D attacks**: Masks, prosthetics (need liveness challenge)  
-❌ **Edge cases**: Albino, elderly (need adaptive thresholds)  
-❌ **Single camera**: Cannot estimate depth  
-❌ **Static thresholds**: Not adaptive to environment  
+### 10.2. Hạn Chế
+❌ **Tấn công 3D**: Mặt nạ, chi tiết giả (cần thử thách sự sống)  
+❌ **Trường hợp đặc biệt**: Bino, người già (cần ngưỡng thích ứng)  
+❌ **Camera đơn**: Không thể ước lượng độ sâu  
+❌ **Ngưỡng tĩnh**: Không thích ứng với môi trường  
 
-### 10.3. Future Enhancements
-1. **Liveness challenge**: Blink detection, eye movement tracking
-2. **Adaptive thresholds**: Based on eye color, age, lighting
-3. **Depth estimation**: Stereo camera or structured light
-4. **Soft voting**: Improve UX (reduce False Negatives)
-5. **On-device training**: Fine-tune on user's eyes (personalized)
+### 10.3. Cải Tiến Tương Lai
+1. **Thử thách sự sống**: Phát hiện chớp mắt, theo dõi chuyển động mắt
+2. **Ngưỡng thích ứng**: Dựa trên màu mắt, tuổi, ánh sáng
+3. **Ước lượng độ sâu**: Camera stereo hoặc ánh sáng cấu trúc
+4. **Bỏ phiếu mềm**: Cải thiện UX (giảm False Negative)
+5. **Huấn luyện trên thiết bị**: Điều chỉnh theo mắt người dùng (cá nhân hóa)
 
-### 10.4. Deployment Considerations
-- **Hardware**: GPU recommended (3× speedup)
-- **Fallback**: CPU mode với resolution 640×480 (15-20 FPS)
-- **Security**: Store model encrypted (prevent theft)
-- **Privacy**: Process locally (không upload ảnh mắt lên cloud)
+### 10.4. Cân Nhắc Triển Khai
+- **Phần cứng**: Khuyến nghị GPU (tăng tốc 3×)
+- **Phương án dự phòng**: Chế độ CPU với độ phân giải 640×480 (15-20 FPS)
+- **Bảo mật**: Lưu model mã hóa (ngăn chặn đánh cắp)
+- **Quyền riêng tư**: Xử lý cục bộ (không tải ảnh mắt lên đám mây)
 
 ---
 
